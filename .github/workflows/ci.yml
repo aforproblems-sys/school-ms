@@ -35,7 +35,7 @@ jobs:
 
       - name: Execute Automated Verification Test Suite
         env:
-          DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/school_ms_ci?schema=public"
+          DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/postgres?schema=public"
           JWT_SECRET: "ci-pipeline-test-jwt-secret-key-min-64-characters-long-2026"
           NODE_ENV: "test"
         run: npx tsx src/scripts/test-phase25-production-readiness.ts
