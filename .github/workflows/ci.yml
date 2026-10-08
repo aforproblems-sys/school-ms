@@ -1,0 +1,47 @@
+name: EduManage Pro CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  validate-and-build:
+    name: Build, Lint & Automated Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run ESLint Verification
+        run: npm run lint
+
+      - name: Run TypeScript Type Check
+        run: npx tsc --noEmit
+
+      - name: Execute Automated Verification Test Suite
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/school_ms_ci?schema=public"
+          JWT_SECRET: "ci-pipeline-test-jwt-secret-key-min-64-characters-long-2026"
+          NODE_ENV: "test"
+        run: npx tsx src/scripts/test-phase25-production-readiness.ts
+
+      - name: Perform Next.js Production Build
+        env:
+          NEXT_PUBLIC_APP_NAME: "EduManage Pro CI"
+          NEXT_PUBLIC_APP_URL: "https://ci.edumanage.internal"
+        run: npm run build
