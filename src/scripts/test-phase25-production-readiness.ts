@@ -8,6 +8,7 @@ import { toggleMaintenanceModeAction } from '../actions/maintenance.actions';
 import { SystemRole, SchoolStatus } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
 // Handle embedded postgres termination signals cleanly
 process.on('uncaughtException', (err: unknown) => {
@@ -40,7 +41,11 @@ async function runPhase25ProductionReadinessTest() {
   }
 
   await pg.start();
-  console.log('✅ PostgreSQL engine ready on 127.0.0.1:5432\n');
+  console.log('PostgreSQL engine ready on 127.0.0.1:5432\n');
+
+  console.log('Applying Prisma schema (db push)...');
+  execSync('npx prisma db push --force-reset --accept-data-loss', { stdio: 'inherit' });
+  console.log('Prisma schema applied.\n');
 
   try {
     // -------------------------------------------------------------------------
