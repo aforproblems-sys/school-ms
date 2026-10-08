@@ -44,3 +44,6 @@ next-env.d.ts
 .postgres-data/
 backups/
 ci_failed.log
+
+# Allow committing env template
+!.env.example
