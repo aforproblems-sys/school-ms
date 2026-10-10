@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 
-export default function DashboardCatchAll({
+export default async function DashboardCatchAll({
   params,
 }: {
-  params: { path: string[] };
+  params: Promise<{ path: string[] }>;
 }) {
-  redirect("/" + params.path.join("/"));
+  const { path } = await params;
+  redirect("/" + path.join("/"));
 }
