@@ -389,9 +389,9 @@ export default function SubscriptionPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
-                { plan: 'BASIC' as SubscriptionPlan, name: 'BASIC', price: '$49', students: '300 Students', teachers: '30 Teachers', storage: '5 GB' },
-                { plan: 'PROFESSIONAL' as SubscriptionPlan, name: 'PROFESSIONAL', price: '$149', students: '1,500 Students', teachers: '100 Teachers', storage: '25 GB' },
-                { plan: 'ENTERPRISE' as SubscriptionPlan, name: 'ENTERPRISE', price: '$399', students: '10,000 Students', teachers: '500 Teachers', storage: '100 GB' },
+                { plan: 'BASIC' as SubscriptionPlan, name: 'BASIC', price: 'PKR 49', students: '300 Students', teachers: '30 Teachers', storage: '5 GB' },
+                { plan: 'PROFESSIONAL' as SubscriptionPlan, name: 'PROFESSIONAL', price: 'PKR 149', students: '1,500 Students', teachers: '100 Teachers', storage: '25 GB' },
+                { plan: 'ENTERPRISE' as SubscriptionPlan, name: 'ENTERPRISE', price: 'PKR 399', students: '10,000 Students', teachers: '500 Teachers', storage: '100 GB' },
               ].map((p) => (
                 <div
                   key={p.plan}

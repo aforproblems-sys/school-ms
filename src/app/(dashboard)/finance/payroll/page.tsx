@@ -314,7 +314,7 @@ export default function PayrollPage() {
                       <div className="text-xs text-slate-400">{r.staffEmail}</div>
                     </td>
                     <td className="px-4 py-3 text-slate-300">{r.month}/{r.year}</td>
-                    <td className="px-4 py-3">{r.netSalary}</td>
+                    <td className="px-4 py-3">{`PKR ${r.netSalary}`}</td>
                     <td className="px-4 py-3">
                       {r.isPaid ? (
                         <span className="inline-flex items-center rounded-full bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 px-2 py-0.5 text-xs">

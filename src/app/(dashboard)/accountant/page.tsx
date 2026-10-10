@@ -36,7 +36,7 @@ export default async function AccountantDashboard() {
             <span className="text-xs font-medium">Term Revenue Collected</span>
             <Receipt className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">$142,800.00</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">PKR 142,800.00</p>
           <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
             <ArrowUpRight className="w-3 h-3" />
             <span>84% collection target achieved</span>
@@ -48,7 +48,7 @@ export default async function AccountantDashboard() {
             <span className="text-xs font-medium">Pending Invoices</span>
             <ShieldAlert className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">$27,200.00</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">PKR 27,200.00</p>
           <span className="text-[11px] text-amber-600 font-medium">16 student invoices overdue</span>
         </div>
 
@@ -57,7 +57,7 @@ export default async function AccountantDashboard() {
             <span className="text-xs font-medium">Monthly Payroll Disbursements</span>
             <Wallet className="w-4 h-4 text-indigo-500" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">$68,500.00</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">PKR 68,500.00</p>
           <span className="text-[11px] text-slate-400 font-medium">Current period processed</span>
         </div>
       </div>
