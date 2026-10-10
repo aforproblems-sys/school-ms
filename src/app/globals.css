@@ -135,3 +135,16 @@ body {
     margin: 15mm 10mm;
   }
 }
+
+/* --- FIX: readable form controls in dark UI --- */
+input, textarea, select {
+  color: inherit;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(148, 163, 184, 0.9); /* slate-400-ish */
+}
+
+input[type="date"], input[type="time"] {
+  color-scheme: dark;
+}
