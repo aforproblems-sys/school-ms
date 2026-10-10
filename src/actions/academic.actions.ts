@@ -185,3 +185,220 @@ export async function deleteAcademicSessionAction(input: { id: string; targetSch
 
   return { success: true as const };
 }
+
+export interface SectionItem {
+  id: string;
+  name: string;
+  capacity: number;
+}
+
+export interface AcademicClassItem {
+  id: string;
+  academicSessionId: string;
+  name: string;
+  numericOrder: number;
+  sections: SectionItem[];
+}
+
+async function getCurrentAcademicSessionIdForSchool(schoolId: string) {
+  const current = await prisma.academicSession.findFirst({
+    where: { schoolId, deletedAt: null, isCurrent: true },
+    select: { id: true, name: true },
+    orderBy: { startDate: 'desc' },
+  });
+  return current;
+}
+
+export async function getAcademicClassesAction(targetSchoolId?: string | null) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized', classes: [] as AcademicClassItem[] };
+
+  const ctx = await validateSchoolAccess(session, targetSchoolId);
+
+  const current = await getCurrentAcademicSessionIdForSchool(ctx.schoolId);
+  if (!current) {
+    return {
+      success: false as const,
+      error: 'No current academic session found. Please create/set a current session first.',
+      classes: [] as AcademicClassItem[],
+    };
+  }
+
+  const classes = await prisma.class.findMany({
+    where: { academicSessionId: current.id, deletedAt: null },
+    orderBy: [{ numericOrder: 'asc' }, { name: 'asc' }],
+    include: {
+      sections: {
+        where: { deletedAt: null },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, capacity: true },
+      },
+    },
+  });
+
+  return {
+    success: true as const,
+    currentSession: { id: current.id, name: current.name },
+    classes: classes.map((c) => ({
+      id: c.id,
+      academicSessionId: c.academicSessionId,
+      name: c.name,
+      numericOrder: c.numericOrder,
+      sections: c.sections.map((s) => ({ id: s.id, name: s.name, capacity: s.capacity })),
+    })),
+  };
+}
+
+export async function createClassAction(input: {
+  name: string;
+  numericOrder: number;
+  targetSchoolId?: string | null;
+}) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  if (session.role !== SystemRole.SUPER_ADMIN && session.role !== SystemRole.SCHOOL_ADMIN) {
+    return { success: false as const, error: 'Forbidden' };
+  }
+
+  const ctx = await validateSchoolAccess(session, input.targetSchoolId);
+
+  const current = await getCurrentAcademicSessionIdForSchool(ctx.schoolId);
+  if (!current) return { success: false as const, error: 'No current academic session found' };
+
+  const name = (input.name || '').trim();
+  if (!name) return { success: false as const, error: 'Class name is required' };
+
+  const numericOrder = Number(input.numericOrder);
+  if (!Number.isFinite(numericOrder) || numericOrder < 1) {
+    return { success: false as const, error: 'numericOrder must be a positive number' };
+  }
+
+  const dup = await prisma.class.findFirst({
+    where: { academicSessionId: current.id, numericOrder, deletedAt: null },
+    select: { id: true },
+  });
+  if (dup) return { success: false as const, error: 'A class with this numeric order already exists in current session' };
+
+  const created = await prisma.class.create({
+    data: {
+      academicSessionId: current.id,
+      name,
+      numericOrder,
+    },
+    select: { id: true },
+  });
+
+  revalidatePath('/academic/classes');
+  revalidatePath('/');
+
+  return { success: true as const, id: created.id };
+}
+
+export async function deleteClassAction(input: { id: string; targetSchoolId?: string | null }) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  if (session.role !== SystemRole.SUPER_ADMIN && session.role !== SystemRole.SCHOOL_ADMIN) {
+    return { success: false as const, error: 'Forbidden' };
+  }
+
+  const ctx = await validateSchoolAccess(session, input.targetSchoolId);
+
+  const cls = await prisma.class.findFirst({
+    where: { id: input.id, deletedAt: null, session: { schoolId: ctx.schoolId, deletedAt: null } },
+    select: { id: true },
+  });
+  if (!cls) return { success: false as const, error: 'Class not found' };
+
+  const enrollCount = await prisma.enrollment.count({
+    where: { classId: input.id, deletedAt: null },
+  });
+  if (enrollCount > 0) {
+    return { success: false as const, error: 'Cannot delete class with active enrollments' };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.section.updateMany({ where: { classId: input.id, deletedAt: null }, data: { deletedAt: new Date() } });
+    await tx.subject.updateMany({ where: { classId: input.id, deletedAt: null }, data: { deletedAt: new Date() } });
+    await tx.class.update({ where: { id: input.id }, data: { deletedAt: new Date() } });
+  });
+
+  revalidatePath('/academic/classes');
+  revalidatePath('/academic/subjects');
+  revalidatePath('/');
+
+  return { success: true as const };
+}
+
+export async function createSectionAction(input: {
+  classId: string;
+  name: string;
+  capacity?: number;
+  targetSchoolId?: string | null;
+}) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  if (session.role !== SystemRole.SUPER_ADMIN && session.role !== SystemRole.SCHOOL_ADMIN) {
+    return { success: false as const, error: 'Forbidden' };
+  }
+
+  const ctx = await validateSchoolAccess(session, input.targetSchoolId);
+
+  const cls = await prisma.class.findFirst({
+    where: { id: input.classId, deletedAt: null, session: { schoolId: ctx.schoolId, deletedAt: null } },
+    select: { id: true },
+  });
+  if (!cls) return { success: false as const, error: 'Class not found' };
+
+  const name = (input.name || '').trim();
+  if (!name) return { success: false as const, error: 'Section name is required' };
+
+  const capacity = input.capacity == null ? 40 : Number(input.capacity);
+  if (!Number.isFinite(capacity) || capacity < 1) return { success: false as const, error: 'Capacity must be >= 1' };
+
+  const created = await prisma.section.create({
+    data: { classId: input.classId, name, capacity },
+    select: { id: true },
+  });
+
+  revalidatePath('/academic/classes');
+  revalidatePath('/');
+
+  return { success: true as const, id: created.id };
+}
+
+export async function deleteSectionAction(input: { id: string; targetSchoolId?: string | null }) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  if (session.role !== SystemRole.SUPER_ADMIN && session.role !== SystemRole.SCHOOL_ADMIN) {
+    return { success: false as const, error: 'Forbidden' };
+  }
+
+  const ctx = await validateSchoolAccess(session, input.targetSchoolId);
+
+  const sec = await prisma.section.findFirst({
+    where: { id: input.id, deletedAt: null, class: { session: { schoolId: ctx.schoolId, deletedAt: null }, deletedAt: null } },
+    select: { id: true, classId: true },
+  });
+  if (!sec) return { success: false as const, error: 'Section not found' };
+
+  const enrollCount = await prisma.enrollment.count({
+    where: { sectionId: input.id, deletedAt: null },
+  });
+  if (enrollCount > 0) {
+    return { success: false as const, error: 'Cannot delete section with active enrollments' };
+  }
+
+  await prisma.section.update({
+    where: { id: input.id },
+    data: { deletedAt: new Date() },
+  });
+
+  revalidatePath('/academic/classes');
+  revalidatePath('/');
+
+  return { success: true as const };
+}
