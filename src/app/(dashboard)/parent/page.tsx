@@ -51,7 +51,7 @@ export default async function ParentDashboard() {
             <span className="text-xs font-medium">Fee Invoice Balance</span>
             <Receipt className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">$1,000.00</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">PKR 1,000.00</p>
           <StatusBadge status="PARTIALLY_PAID" />
         </div>
       </div>

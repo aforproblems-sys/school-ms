@@ -195,7 +195,7 @@ export default function ExpensesPage() {
                     <td className="px-4 py-3 text-slate-300">{x.expenseDate}</td>
                     <td className="px-4 py-3">{x.category}</td>
                     <td className="px-4 py-3 font-medium">{x.title}</td>
-                    <td className="px-4 py-3">{x.amount}</td>
+                    <td className="px-4 py-3">{`PKR ${x.amount}`}</td>
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => onDelete(x.id)}

@@ -159,7 +159,7 @@ export default function FeeManagementPage() {
             </div>
           </div>
           <p className="text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
-            ${invoicesData.summary.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            PKR {invoicesData.summary.totalInvoiced.toLocaleString('en-PK', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-[10px] text-slate-400 font-medium">Cumulative gross billed fees</p>
         </div>
@@ -173,7 +173,7 @@ export default function FeeManagementPage() {
             </div>
           </div>
           <p className="text-2xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-            ${invoicesData.summary.totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            PKR {invoicesData.summary.totalCollected.toLocaleString('en-PK', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-[10px] text-slate-400 font-medium">Realized revenue in bank account</p>
         </div>
@@ -187,7 +187,7 @@ export default function FeeManagementPage() {
             </div>
           </div>
           <p className="text-2xl font-extrabold font-mono text-amber-600 dark:text-amber-400">
-            ${invoicesData.summary.totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            PKR {invoicesData.summary.totalPending.toLocaleString('en-PK', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-[10px] text-slate-400 font-medium">Outstanding uncollected invoices</p>
         </div>
@@ -306,9 +306,9 @@ export default function FeeManagementPage() {
                       <th className="pb-3">Student Name</th>
                       <th className="pb-3">Class</th>
                       <th className="pb-3">Fee Title</th>
-                      <th className="pb-3 text-right">Invoiced ($)</th>
-                      <th className="pb-3 text-right">Paid ($)</th>
-                      <th className="pb-3 text-right">Balance ($)</th>
+                      <th className="pb-3 text-right">Invoiced (PKR)</th>
+                      <th className="pb-3 text-right">Paid (PKR)</th>
+                      <th className="pb-3 text-right">Balance (PKR)</th>
                       <th className="pb-3 text-center">Status</th>
                       <th className="pb-3 text-right">Actions</th>
                     </tr>
@@ -330,13 +330,13 @@ export default function FeeManagementPage() {
                           {inv.feeName}
                         </td>
                         <td className="py-3 text-right font-mono font-bold text-slate-900 dark:text-white">
-                          ${inv.amount.toFixed(2)}
+                          PKR {inv.amount.toFixed(2)}
                         </td>
                         <td className="py-3 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                          ${inv.paidAmount.toFixed(2)}
+                          PKR {inv.paidAmount.toFixed(2)}
                         </td>
                         <td className="py-3 text-right font-mono font-extrabold text-indigo-600 dark:text-indigo-400">
-                          ${inv.remainingBalance.toFixed(2)}
+                          PKR {inv.remainingBalance.toFixed(2)}
                         </td>
                         <td className="py-3 text-center">
                           <StatusBadge status={inv.status} />
