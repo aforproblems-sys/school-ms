@@ -303,6 +303,7 @@ model Subject {
   teacherSubjects TeacherSubject[]
   examSubjects    ExamSubject[]
   homeworks       Homework[]
+  timetables      Timetable[]
 
   @@unique([classId, code])
 }
@@ -451,6 +452,7 @@ model Timetable {
   id        String   @id @default(cuid())
   sectionId String
   teacherId String
+  subjectId String?
   dayOfWeek Int // 1 (Monday) to 7 (Sunday)
   startTime String // "08:00"
   endTime   String // "08:45"
@@ -458,10 +460,12 @@ model Timetable {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  section Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  teacher Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
 
   @@unique([sectionId, dayOfWeek, startTime])
+  @@index([sectionId, dayOfWeek])
 }
 
 // ==========================================
