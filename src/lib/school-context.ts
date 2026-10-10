@@ -19,19 +19,32 @@ export async function validateSchoolAccess(
 ): Promise<SchoolContextResult> {
   const isSuperAdmin = session.role === SystemRole.SUPER_ADMIN;
 
-  if (isSuperAdmin) {
-    let resolvedSchoolId = targetSchoolId || session.schoolId;
-    if (!resolvedSchoolId) {
-      const firstSchool = await prisma.school.findFirst({ select: { id: true } });
-      resolvedSchoolId = firstSchool?.id || 'default-primary-school';
+if (isSuperAdmin) {
+  let resolvedSchoolId = targetSchoolId || session.schoolId;
+
+  if (!resolvedSchoolId) {
+    const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+    if (!firstSchool) {
+      throw new Error('No schools found. Please create/onboard a school first.');
     }
-    return {
-      schoolId: resolvedSchoolId,
-      isSuperAdmin: true,
-      role: session.role,
-    };
+    resolvedSchoolId = firstSchool.id;
   }
 
+  const exists = await prisma.school.findUnique({
+    where: { id: resolvedSchoolId },
+    select: { id: true },
+  });
+
+  if (!exists) {
+    throw new Error(`School tenant [${resolvedSchoolId}] not found.`);
+  }
+
+  return {
+    schoolId: resolvedSchoolId,
+    isSuperAdmin: true,
+    role: session.role,
+  };
+}
   const userSchoolId = session.schoolId;
   if (!userSchoolId) {
     throw new Error('Unauthorized. User is not assigned to any school tenant.');
