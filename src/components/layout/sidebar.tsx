@@ -41,7 +41,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   {
     title: 'Dashboard',
-    href: '/dashboard',
+    href: '/',
     icon: LayoutDashboard,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'ACCOUNTANT', 'PARENT', 'STUDENT'],
   },
@@ -53,19 +53,19 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     title: 'Academic Sessions',
-    href: '/school-admin',
+    href: '/academic/sessions',
     icon: Building2,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
   {
     title: 'Classes & Sections',
-    href: '/school-admin',
+    href: '/academic/classes',
     icon: GraduationCap,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
   },
   {
     title: 'Subjects',
-    href: '/school-admin',
+    href: '/academic/subjects',
     icon: BookOpen,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
   },
@@ -77,37 +77,37 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     title: 'Timetable',
-    href: '/dashboard/timetable',
+    href: '/timetable',
     icon: Clock,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'PARENT', 'STUDENT'],
   },
   {
     title: 'Exams & Marks',
-    href: '/dashboard/examinations/exams',
+    href: '/examinations/exams',
     icon: FileSpreadsheet,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'PARENT', 'STUDENT'],
   },
   {
     title: 'Fees & Invoices',
-    href: '/dashboard/finance/fees',
+    href: '/finance/fees',
     icon: Receipt,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACCOUNTANT', 'PARENT', 'STUDENT'],
   },
   {
     title: 'Expenses',
-    href: '/dashboard/finance/expenses',
+    href: '/finance/expenses',
     icon: DollarSign,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACCOUNTANT'],
   },
   {
     title: 'Payroll',
-    href: '/dashboard/finance/payroll',
+    href: '/finance/payroll',
     icon: Wallet,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACCOUNTANT'],
   },
   {
     title: 'Homework',
-    href: '/dashboard/academic-work/homework',
+    href: '/academic-work/homework',
     icon: BookMarked,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'PARENT', 'STUDENT'],
   },
@@ -143,25 +143,25 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     title: 'Reports & Analytics',
-    href: '/dashboard/reports',
+    href: '/reports',
     icon: BarChart3,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACCOUNTANT', 'TEACHER', 'PARENT', 'STUDENT'],
   },
   {
     title: 'Documents & PDFs',
-    href: '/dashboard/documents',
+    href: '/documents',
     icon: FileText,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACCOUNTANT', 'TEACHER', 'PARENT', 'STUDENT'],
   },
   {
     title: 'Bulk Import & Export',
-    href: '/dashboard/import-export',
+    href: '/import-export',
     icon: Database,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACCOUNTANT', 'TEACHER'],
   },
   {
     title: 'School Settings',
-    href: '/dashboard/settings',
+    href: '/settings',
     icon: Settings,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
@@ -191,11 +191,23 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     title: 'Audit Logs',
-    href: '/dashboard/audit-logs',
+    href: '/audit-logs',
     icon: ShieldCheck,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
 ];
+
+function computeActiveHref(pathname: string, items: NavItem[]): string | null {
+  const path = pathname || '/';
+
+  const matches = items.filter((item) => {
+    if (item.href === '/') return path === '/';
+    return path === item.href || path.startsWith(item.href + '/');
+  });
+
+  matches.sort((a, b) => b.href.length - a.href.length);
+  return matches[0]?.href ?? null;
+}
 
 interface SidebarProps {
   role: SystemRole;
@@ -206,6 +218,7 @@ export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
 
   const filteredItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const activeHref = computeActiveHref(pathname || '/', filteredItems);
 
   return (
     <aside className="hidden md:flex w-64 h-screen sticky top-0 flex-col bg-slate-900 text-slate-200 border-r border-slate-800 shadow-xl z-30 shrink-0">
@@ -224,9 +237,7 @@ export function Sidebar({ role }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {filteredItems.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            pathname === item.href ||
-            (item.href !== '/dashboard' && pathname.startsWith(item.href));
+          const isActive = item.href === activeHref;
 
           return (
             <Link
@@ -275,6 +286,7 @@ export function MobileSidebar({ role }: { role: SystemRole }) {
   const pathname = usePathname();
 
   const filteredItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const activeHref = computeActiveHref(pathname || '/', filteredItems);
 
   return (
     <div className="md:hidden">
@@ -318,9 +330,7 @@ export function MobileSidebar({ role }: { role: SystemRole }) {
             <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
               {filteredItems.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                const isActive = item.href === activeHref;
 
                 return (
                   <Link
