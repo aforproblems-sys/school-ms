@@ -402,3 +402,163 @@ export async function deleteSectionAction(input: { id: string; targetSchoolId?: 
 
   return { success: true as const };
 }
+
+export interface SubjectItem {
+  id: string;
+  classId: string;
+  className: string;
+  classNumericOrder: number;
+  name: string;
+  code: string;
+  type: string;
+}
+
+export async function getAcademicSubjectsAction(input?: { classId?: string | null; targetSchoolId?: string | null }) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized', classes: [], subjects: [] as SubjectItem[] };
+
+  const ctx = await validateSchoolAccess(session, input?.targetSchoolId);
+
+  const current = await getCurrentAcademicSessionIdForSchool(ctx.schoolId);
+  if (!current) {
+    return {
+      success: false as const,
+      error: 'No current academic session found. Please create/set a current session first.',
+      classes: [],
+      subjects: [] as SubjectItem[],
+    };
+  }
+
+  const classes = await prisma.class.findMany({
+    where: { academicSessionId: current.id, deletedAt: null },
+    orderBy: [{ numericOrder: 'asc' }, { name: 'asc' }],
+    select: { id: true, name: true, numericOrder: true },
+  });
+
+  const classId = input?.classId || null;
+  if (classId && !classes.some((c) => c.id === classId)) {
+    return { success: false as const, error: 'Invalid class selected', classes, subjects: [] as SubjectItem[] };
+  }
+
+  const subjects = await prisma.subject.findMany({
+    where: {
+      deletedAt: null,
+      class: {
+        deletedAt: null,
+        academicSessionId: current.id,
+        ...(classId ? { id: classId } : {}),
+      },
+    },
+    orderBy: [{ class: { numericOrder: 'asc' } }, { code: 'asc' }],
+    select: {
+      id: true,
+      classId: true,
+      name: true,
+      code: true,
+      type: true,
+      class: { select: { name: true, numericOrder: true } },
+    },
+  });
+
+  return {
+    success: true as const,
+    currentSession: { id: current.id, name: current.name },
+    classes,
+    subjects: subjects.map((s) => ({
+      id: s.id,
+      classId: s.classId,
+      className: s.class.name,
+      classNumericOrder: s.class.numericOrder,
+      name: s.name,
+      code: s.code,
+      type: String(s.type),
+    })),
+  };
+}
+
+export async function createSubjectAction(input: {
+  classId: string;
+  name: string;
+  code: string;
+  type?: string;
+  targetSchoolId?: string | null;
+}) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  if (session.role !== SystemRole.SUPER_ADMIN && session.role !== SystemRole.SCHOOL_ADMIN) {
+    return { success: false as const, error: 'Forbidden' };
+  }
+
+  const ctx = await validateSchoolAccess(session, input.targetSchoolId);
+
+  const cls = await prisma.class.findFirst({
+    where: {
+      id: input.classId,
+      deletedAt: null,
+      session: { schoolId: ctx.schoolId, deletedAt: null },
+    },
+    select: { id: true },
+  });
+  if (!cls) return { success: false as const, error: 'Class not found' };
+
+  const name = (input.name || '').trim();
+  const code = (input.code || '').trim().toUpperCase();
+
+  if (!name) return { success: false as const, error: 'Subject name is required' };
+  if (!code) return { success: false as const, error: 'Subject code is required' };
+
+  const dup = await prisma.subject.findFirst({
+    where: { classId: input.classId, code, deletedAt: null },
+    select: { id: true },
+  });
+  if (dup) return { success: false as const, error: 'Subject code already exists for this class' };
+
+  const created = await prisma.subject.create({
+    data: {
+      classId: input.classId,
+      name,
+      code,
+      // type stored as enum in DB; Prisma accepts string for enum at runtime
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      type: (input.type as any) || undefined,
+    },
+    select: { id: true },
+  });
+
+  revalidatePath('/academic/subjects');
+  revalidatePath('/');
+
+  return { success: true as const, id: created.id };
+}
+
+export async function deleteSubjectAction(input: { id: string; targetSchoolId?: string | null }) {
+  const session = await getAuthSessionSafely();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  if (session.role !== SystemRole.SUPER_ADMIN && session.role !== SystemRole.SCHOOL_ADMIN) {
+    return { success: false as const, error: 'Forbidden' };
+  }
+
+  const ctx = await validateSchoolAccess(session, input.targetSchoolId);
+
+  const subj = await prisma.subject.findFirst({
+    where: {
+      id: input.id,
+      deletedAt: null,
+      class: { deletedAt: null, session: { schoolId: ctx.schoolId, deletedAt: null } },
+    },
+    select: { id: true },
+  });
+  if (!subj) return { success: false as const, error: 'Subject not found' };
+
+  await prisma.subject.update({
+    where: { id: input.id },
+    data: { deletedAt: new Date() },
+  });
+
+  revalidatePath('/academic/subjects');
+  revalidatePath('/');
+
+  return { success: true as const };
+}
