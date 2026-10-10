@@ -126,12 +126,12 @@ enum InvoiceStatus {
 // ==========================================
 
 model Role {
-  id          String           @id @default(cuid())
-  name        String           @unique
+  id          String    @id @default(cuid())
+  name        String    @unique
   description String?
-  isSystem    Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   users       User[]
@@ -139,14 +139,14 @@ model Role {
 }
 
 model Permission {
-  id          String           @id @default(cuid())
-  code        String           @unique // e.g., "students:create", "fees:collect"
-  module      String           // e.g., "STUDENTS", "FINANCE"
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g., "students:create", "fees:collect"
+  module      String // e.g., "STUDENTS", "FINANCE"
   description String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  roles       RolePermission[]
+  roles RolePermission[]
 }
 
 model RolePermission {
@@ -159,8 +159,8 @@ model RolePermission {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
+  id           String     @id @default(cuid())
+  email        String     @unique
   passwordHash String
   fullName     String
   phoneNumber  String?
@@ -168,27 +168,27 @@ model User {
   systemRole   SystemRole
   roleId       String?
   schoolId     String?
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   deletedAt    DateTime?
 
-  role         Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  school       School?      @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  role   Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 
   studentProfile Student?
   parentProfile  Parent?
   teacherProfile Teacher?
 
-  sentMessages   Message[]      @relation("MessageSender")
-  receivedMessages Message[]    @relation("MessageReceiver")
-  notifications  Notification[]
-  files          File[]         @relation("FileUploader")
-  auditLogs      AuditLog[]
-  notices        Notice[]       @relation("NoticeAuthor")
+  sentMessages             Message[]                 @relation("MessageSender")
+  receivedMessages         Message[]                 @relation("MessageReceiver")
+  notifications            Notification[]
+  files                    File[]                    @relation("FileUploader")
+  auditLogs                AuditLog[]
+  notices                  Notice[]                  @relation("NoticeAuthor")
   conversationParticipants ConversationParticipant[] @relation("UserConversations")
-  notificationPreference  NotificationPreference?
-  communicationLogs       CommunicationLog[]
+  notificationPreference   NotificationPreference?
+  communicationLogs        CommunicationLog[]
 
   @@index([email, systemRole])
   @@index([schoolId])
@@ -226,20 +226,21 @@ model School {
   notificationSetting NotificationSetting?
   subscription        SchoolSubscription?
   invoices            Invoice[]
+  expenses            Expense[]
 
   @@index([status])
   @@index([subscriptionPlan])
 }
 
 model AcademicSession {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   schoolId  String
-  name      String   // e.g., "2025-2026"
+  name      String // e.g., "2025-2026"
   startDate DateTime
   endDate   DateTime
-  isCurrent Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isCurrent Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   school        School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
@@ -253,12 +254,12 @@ model AcademicSession {
 }
 
 model Class {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   academicSessionId String
-  name              String   // e.g., "Grade 10"
+  name              String // e.g., "Grade 10"
   numericOrder      Int
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
 
   session       AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Cascade)
@@ -271,12 +272,12 @@ model Class {
 }
 
 model Section {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   classId   String
-  name      String   // e.g., "Section A"
-  capacity  Int      @default(40)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  name      String // e.g., "Section A"
+  capacity  Int       @default(40)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   class           Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
@@ -291,8 +292,8 @@ model Section {
 model Subject {
   id        String      @id @default(cuid())
   classId   String
-  name      String      // e.g., "Advanced Mathematics"
-  code      String      // e.g., "MATH101"
+  name      String // e.g., "Advanced Mathematics"
+  code      String // e.g., "MATH101"
   type      SubjectType @default(THEORY)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -366,7 +367,7 @@ model Teacher {
 model StudentParent {
   studentId    String
   parentId     String
-  relationship String   // Father, Mother, Guardian
+  relationship String // Father, Mother, Guardian
   createdAt    DateTime @default(now())
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -450,9 +451,9 @@ model Timetable {
   id        String   @id @default(cuid())
   sectionId String
   teacherId String
-  dayOfWeek Int      // 1 (Monday) to 7 (Sunday)
-  startTime String   // "08:00"
-  endTime   String   // "08:45"
+  dayOfWeek Int // 1 (Monday) to 7 (Sunday)
+  startTime String // "08:00"
+  endTime   String // "08:45"
   roomNo    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -470,7 +471,7 @@ model Timetable {
 model Exam {
   id                String    @id @default(cuid())
   academicSessionId String
-  name              String    // Mid-Term 2025
+  name              String // Mid-Term 2025
   startDate         DateTime
   endDate           DateTime
   isPublished       Boolean   @default(false)
@@ -544,7 +545,7 @@ model FeeStructure {
   id                String    @id @default(cuid())
   academicSessionId String
   classId           String
-  name              String    // e.g. "Tuition Fee", "Library Fee"
+  name              String // e.g. "Tuition Fee", "Library Fee"
   amount            Decimal   @db.Decimal(12, 2)
   dueDate           DateTime
   createdAt         DateTime  @default(now())
@@ -565,7 +566,7 @@ model StudentFee {
   invoiceNo      String    @unique
   amount         Decimal   @db.Decimal(12, 2)
   discountAmount Decimal   @default(0.00) @db.Decimal(12, 2)
-  lateFeeAmount   Decimal   @default(0.00) @db.Decimal(12, 2)
+  lateFeeAmount  Decimal   @default(0.00) @db.Decimal(12, 2)
   paidAmount     Decimal   @default(0.00) @db.Decimal(12, 2)
   status         FeeStatus @default(UNPAID)
   dueDate        DateTime
@@ -598,7 +599,8 @@ model FeePayment {
 
 model Expense {
   id          String    @id @default(cuid())
-  category    String    // e.g. "Utilities", "Maintenance", "Supplies"
+  schoolId    String
+  category    String // e.g. "Utilities", "Maintenance", "Supplies"
   title       String
   amount      Decimal   @db.Decimal(12, 2)
   expenseDate DateTime
@@ -607,7 +609,9 @@ model Expense {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
+  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
+  @@index([schoolId, expenseDate])
   @@index([expenseDate, category])
 }
 
@@ -615,7 +619,7 @@ model Payroll {
   id                String    @id @default(cuid())
   academicSessionId String
   staffUserId       String
-  month             Int       // 1 - 12
+  month             Int // 1 - 12
   year              Int
   basicSalary       Decimal   @db.Decimal(12, 2)
   allowances        Decimal   @default(0.00) @db.Decimal(12, 2)
@@ -685,11 +689,11 @@ model Conversation {
 }
 
 model ConversationParticipant {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String
   userId         String
-  joinedAt       DateTime     @default(now())
-  lastReadAt     DateTime     @default(now())
+  joinedAt       DateTime @default(now())
+  lastReadAt     DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
@@ -699,15 +703,15 @@ model ConversationParticipant {
 }
 
 model Message {
-  id             String        @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String?
   senderId       String
   receiverId     String?
   text           String
   attachmentUrl  String?
-  isRead         Boolean       @default(false)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
@@ -724,7 +728,7 @@ model Notification {
   message   String
   isRead    Boolean  @default(false)
   linkUrl   String?
-  type      String?  // e.g. NEW_NOTICE, FEE_PAYMENT, ATTENDANCE_ALERT
+  type      String? // e.g. NEW_NOTICE, FEE_PAYMENT, ATTENDANCE_ALERT
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -770,9 +774,9 @@ model CommunicationLog {
   notificationId String?
   userId         String
   channel        CommunicationChannel
-  provider       String               // e.g., "SMTP", "TWILIO_WHATSAPP", "TWILIO_SMS", "SIMULATED"
-  messageType    String               // e.g., "FEE_RECEIPT", "ATTENDANCE_ALERT"
-  recipient      String               // email address or E.164 phone number
+  provider       String // e.g., "SMTP", "TWILIO_WHATSAPP", "TWILIO_SMS", "SIMULATED"
+  messageType    String // e.g., "FEE_RECEIPT", "ATTENDANCE_ALERT"
+  recipient      String // email address or E.164 phone number
   status         CommunicationStatus  @default(PENDING)
   attemptCount   Int                  @default(0)
   maxAttempts    Int                  @default(3)
@@ -809,7 +813,7 @@ model AuditLog {
   id        String      @id @default(cuid())
   userId    String?
   action    AuditAction
-  entity    String      // e.g. "FeePayment", "StudentFee"
+  entity    String // e.g. "FeePayment", "StudentFee"
   entityId  String?
   oldValue  Json?
   newValue  Json?
@@ -827,12 +831,12 @@ model BackupLog {
   filename       String
   filePath       String
   fileSizeBytes  BigInt
-  backupType     String    // "DATABASE_SQL", "FILES_ARCHIVE"
+  backupType     String // "DATABASE_SQL", "FILES_ARCHIVE"
   checksumSha256 String
-  status         String    // "COMPLETED", "FAILED", "VERIFIED"
-  triggeredBy    String    // "AUTOMATED_CRON", "MANUAL_CLI", "SYSTEM"
+  status         String // "COMPLETED", "FAILED", "VERIFIED"
+  triggeredBy    String // "AUTOMATED_CRON", "MANUAL_CLI", "SYSTEM"
   errorMessage   String?
-  recordCounts   Json?     // e.g. { "users": 15, "students": 40, ... }
+  recordCounts   Json? // e.g. { "users": 15, "students": 40, ... }
   createdAt      DateTime  @default(now())
   verifiedAt     DateTime?
 
@@ -864,21 +868,21 @@ model SchoolSubscription {
 }
 
 model Invoice {
-  id                 String        @id @default(cuid())
+  id                 String           @id @default(cuid())
   schoolId           String
-  invoiceNumber      String        @unique
+  invoiceNumber      String           @unique
   plan               SubscriptionPlan
-  amount             Decimal       @db.Decimal(12, 2)
-  currency           String        @default("USD")
-  status             InvoiceStatus @default(PENDING)
+  amount             Decimal          @db.Decimal(12, 2)
+  currency           String           @default("USD")
+  status             InvoiceStatus    @default(PENDING)
   paymentRef         String?
   billingPeriodStart DateTime
   billingPeriodEnd   DateTime
-  invoiceDate        DateTime      @default(now())
+  invoiceDate        DateTime         @default(now())
   dueDate            DateTime
   paidAt             DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
@@ -893,10 +897,8 @@ model BillingWebhookLog {
   provider  String
   eventType String
   payload   Json
-  status    String   // "PROCESSED", "IGNORED", "FAILED"
+  status    String // "PROCESSED", "IGNORED", "FAILED"
   createdAt DateTime @default(now())
 
   @@index([provider, eventType])
 }
-
-
