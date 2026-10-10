@@ -44,7 +44,15 @@ async function runPhase25ProductionReadinessTest() {
   console.log('PostgreSQL engine ready on 127.0.0.1:5432\n');
 
   console.log('Applying Prisma schema (db push)...');
-  execSync('npx prisma db push --force-reset --accept-data-loss', { stdio: 'inherit' });
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isLocalDb = dbUrl.includes('127.0.0.1') || dbUrl.includes('localhost');
+
+  if (!isLocalDb && process.env.ALLOW_DESTRUCTIVE_DB_RESET !== 'true') {
+    console.log('⚠️ Non-local DATABASE_URL detected. Running safe prisma db push (no reset)...');
+    execSync('npx prisma db push', { stdio: 'inherit' });
+  } else {
+    execSync('npx prisma db push --force-reset --accept-data-loss', { stdio: 'inherit' });
+  }
   console.log('Prisma schema applied.\n');
 
   try {
