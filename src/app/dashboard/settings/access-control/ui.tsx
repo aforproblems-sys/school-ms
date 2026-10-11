@@ -13,20 +13,26 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
   const [matrix, setMatrix] = useState<any>(null);
 
   async function loadAll(schoolId?: string) {
-    setError(null);
+    try {
+      setError(null);
 
-    if (isSuperAdmin) {
-      const s = await listSchoolsAction();
-      if (s.success) setSchools(s.schools);
-    }
+      if (isSuperAdmin) {
+        const s = await listSchoolsAction();
+        if (s.success) setSchools(s.schools);
+        else setError(s.error || 'Failed to load schools');
+      }
 
-    const m = await getAccessMatrixAction(schoolId || null);
-    if (!m.success) {
-      setError(m.error || 'Failed to load matrix');
+      const m: any = await getAccessMatrixAction(schoolId || null);
+      if (!m?.success) {
+        setError(m?.error || 'Failed to load matrix');
+        setMatrix(null);
+        return;
+      }
+      setMatrix(m);
+    } catch (e: any) {
       setMatrix(null);
-      return;
+      setError(e?.message || String(e) || 'Unexpected error while loading');
     }
-    setMatrix(m);
   }
 
   useEffect(() => {
@@ -39,14 +45,18 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
   async function onToggle(role: SystemRole, perm: string, enabled: boolean) {
     setError(null);
     startTransition(async () => {
-      const res = await setRolePermissionAction({
-        targetSchoolId: isSuperAdmin ? (targetSchoolId || null) : null,
-        systemRole: role,
-        permissionCode: perm,
-        enabled,
-      });
-      if (!res.success) setError(res.error || 'Failed');
-      await loadAll(isSuperAdmin ? targetSchoolId : '');
+      try {
+        const res: any = await setRolePermissionAction({
+          targetSchoolId: isSuperAdmin ? (targetSchoolId || null) : null,
+          systemRole: role,
+          permissionCode: perm,
+          enabled,
+        });
+        if (!res?.success) setError(res?.error || 'Failed');
+        await loadAll(isSuperAdmin ? targetSchoolId : '');
+      } catch (e: any) {
+        setError(e?.message || String(e) || 'Unexpected error while saving');
+      }
     });
   }
 
