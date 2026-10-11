@@ -59,6 +59,7 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
     'auditlogs.read',
   ],
   TEACHER: [
+    'portal.teacher',
     'students.read',
     'attendance.read',
     'attendance.create',
@@ -78,6 +79,7 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
     'reports.read',
   ],
   ACCOUNTANT: [
+    'portal.accountant',
     'students.read',
     'fees.read',
     'fees.create',
@@ -90,6 +92,7 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
     'notices.read',
   ],
   PARENT: [
+    'portal.parent',
     'students.read',
     'attendance.read',
     'timetable.read',
@@ -101,6 +104,7 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
     'reports.read',
   ],
   STUDENT: [
+    'portal.student',
     'students.read',
     'attendance.read',
     'timetable.read',
@@ -128,19 +132,45 @@ export function can(user: UserSession | null, permission: string): boolean {
   // 1. Super Admin has unrestricted access
   if (user.role === 'SUPER_ADMIN') return true;
 
-  const rolePerms = ROLE_PERMISSIONS[user.role] || [];
+  const basePerms = ROLE_PERMISSIONS[user.role] || [];
   const customPerms = user.permissions || [];
-  const allUserPerms = Array.from(new Set([...rolePerms, ...customPerms]));
 
-  if (allUserPerms.includes('*') || allUserPerms.includes(permission)) {
-    return true;
+  // Start from defaults then apply overrides:
+  // - "perm.code" => allow/add
+  // - "!perm.code" => deny/remove
+  const permSet = new Set<string>(basePerms);
+
+  for (const p of customPerms) {
+    if (!p) continue;
+
+    if (p === '*') {
+      permSet.add('*');
+      continue;
+    }
+
+    if (p.startsWith('!')) {
+      const deny = p.slice(1);
+      permSet.delete(deny);
+
+      if (deny.endsWith('.*')) {
+        const domain = deny.slice(0, -2);
+        // remove any permission under that domain
+        for (const v of Array.from(permSet)) {
+          if (v === deny) continue;
+          if (v.startsWith(domain + '.')) permSet.delete(v);
+        }
+      }
+      continue;
+    }
+
+    permSet.add(p);
   }
 
-  // 2. Wildcard prefix check e.g. "students.*" matches "students.read"
+  if (permSet.has('*') || permSet.has(permission)) return true;
+
+  // wildcard domain check e.g. "students.*" matches "students.read"
   const [domain] = permission.split('.');
-  if (allUserPerms.includes(`${domain}.*`)) {
-    return true;
-  }
+  if (permSet.has(`${domain}.*`)) return true;
 
   return false;
 }
