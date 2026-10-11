@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, GraduationCap, Lock, Award } from 'lucide-react';
-
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
