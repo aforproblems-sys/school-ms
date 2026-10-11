@@ -26,47 +26,57 @@ function resolveSchoolId(session: { role: SystemRole; schoolId?: string | null }
 }
 
 export async function listSchoolsAction() {
-  const session = await getSession();
-  if (!session) return { success: false as const, error: 'Unauthorized', schools: [] as any[] };
-  if (session.role !== SystemRole.SUPER_ADMIN) return { success: false as const, error: 'Forbidden', schools: [] as any[] };
+  try {
+    const session = await getSession();
+    if (!session) return { success: false as const, error: 'Unauthorized', schools: [] as any[] };
+    if (session.role !== SystemRole.SUPER_ADMIN) return { success: false as const, error: 'Forbidden', schools: [] as any[] };
 
-  const schools = await prisma.school.findMany({
-    orderBy: { createdAt: 'asc' },
-    select: { id: true, name: true, code: true },
-    take: 200,
-  });
+    const schools = await prisma.school.findMany({
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, name: true, code: true },
+      take: 200,
+    });
 
-  return { success: true as const, schools };
+    return { success: true as const, schools };
+  } catch (e) {
+    console.error('listSchoolsAction error:', e);
+    return { success: false as const, error: 'Failed to load schools', schools: [] as any[] };
+  }
 }
 
 export async function getAccessMatrixAction(targetSchoolId?: string | null) {
-  const session = await getSession();
-  if (!session) return { success: false as const, error: 'Unauthorized' as const };
-  if (!ADMIN_ROLES.includes(session.role)) return { success: false as const, error: 'Forbidden' as const };
+  try {
+    const session = await getSession();
+    if (!session) return { success: false as const, error: 'Unauthorized' as const };
+    if (!ADMIN_ROLES.includes(session.role)) return { success: false as const, error: 'Forbidden' as const };
 
-  const schoolId = resolveSchoolId(session, targetSchoolId ?? null);
-  if (!schoolId) return { success: false as const, error: 'No school selected' as const };
+    const schoolId = resolveSchoolId(session, targetSchoolId ?? null);
+    if (!schoolId) return { success: false as const, error: 'No school selected' as const };
 
-  const rows = await prisma.schoolRolePermission.findMany({
-    where: { schoolId },
-    select: { systemRole: true, permissionCode: true, allowed: true },
-  });
+    const rows = await prisma.schoolRolePermission.findMany({
+      where: { schoolId },
+      select: { systemRole: true, permissionCode: true, allowed: true },
+    });
 
-  const denied: Record<string, Set<string>> = {};
-  for (const r of MANAGED_ROLES) denied[r] = new Set();
+    const denied: Record<string, Set<string>> = {};
+    for (const r of MANAGED_ROLES) denied[r] = new Set();
 
-  for (const row of rows) {
-    if (!MANAGED_ROLES.includes(row.systemRole)) continue;
-    if (row.allowed === false) denied[row.systemRole].add(row.permissionCode);
+    for (const row of rows) {
+      if (!MANAGED_ROLES.includes(row.systemRole)) continue;
+      if (row.allowed === false) denied[row.systemRole].add(row.permissionCode);
+    }
+
+    return {
+      success: true as const,
+      schoolId,
+      roles: MANAGED_ROLES,
+      permissionGroups: PERMISSION_GROUPS,
+      denied: Object.fromEntries(Object.entries(denied).map(([k, v]) => [k, Array.from(v)])),
+    };
+  } catch (e: any) {
+    console.error('getAccessMatrixAction error:', e);
+    return { success: false as const, error: e?.message || 'Failed to load access matrix' };
   }
-
-  return {
-    success: true as const,
-    schoolId,
-    roles: MANAGED_ROLES,
-    permissionGroups: PERMISSION_GROUPS,
-    denied: Object.fromEntries(Object.entries(denied).map(([k, v]) => [k, Array.from(v)])),
-  };
 }
 
 export async function setRolePermissionAction(input: {
@@ -75,35 +85,40 @@ export async function setRolePermissionAction(input: {
   permissionCode: string;
   enabled: boolean;
 }) {
-  const session = await getSession();
-  if (!session) return { success: false as const, error: 'Unauthorized' };
-  if (!ADMIN_ROLES.includes(session.role)) return { success: false as const, error: 'Forbidden' };
+  try {
+    const session = await getSession();
+    if (!session) return { success: false as const, error: 'Unauthorized' };
+    if (!ADMIN_ROLES.includes(session.role)) return { success: false as const, error: 'Forbidden' };
 
-  if (!MANAGED_ROLES.includes(input.systemRole)) {
-    return { success: false as const, error: 'Role not manageable here' };
-  }
+    if (!MANAGED_ROLES.includes(input.systemRole)) {
+      return { success: false as const, error: 'Role not manageable here' };
+    }
 
-  const schoolId = resolveSchoolId(session, input.targetSchoolId ?? null);
-  if (!schoolId) return { success: false as const, error: 'No school selected' };
+    const schoolId = resolveSchoolId(session, input.targetSchoolId ?? null);
+    if (!schoolId) return { success: false as const, error: 'No school selected' };
 
-  if (input.enabled) {
-    await prisma.schoolRolePermission.deleteMany({
-      where: { schoolId, systemRole: input.systemRole, permissionCode: input.permissionCode },
-    });
-    return { success: true as const };
-  }
+    if (input.enabled) {
+      await prisma.schoolRolePermission.deleteMany({
+        where: { schoolId, systemRole: input.systemRole, permissionCode: input.permissionCode },
+      });
+      return { success: true as const };
+    }
 
-  await prisma.schoolRolePermission.upsert({
-    where: {
-      schoolId_systemRole_permissionCode: {
-        schoolId,
-        systemRole: input.systemRole,
-        permissionCode: input.permissionCode,
+    await prisma.schoolRolePermission.upsert({
+      where: {
+        schoolId_systemRole_permissionCode: {
+          schoolId,
+          systemRole: input.systemRole,
+          permissionCode: input.permissionCode,
+        },
       },
-    },
-    create: { schoolId, systemRole: input.systemRole, permissionCode: input.permissionCode, allowed: false },
-    update: { allowed: false },
-  });
+      create: { schoolId, systemRole: input.systemRole, permissionCode: input.permissionCode, allowed: false },
+      update: { allowed: false },
+    });
 
-  return { success: true as const };
+    return { success: true as const };
+  } catch (e: any) {
+    console.error('setRolePermissionAction error:', e);
+    return { success: false as const, error: e?.message || 'Failed to save permission' };
+  }
 }
