@@ -223,6 +223,7 @@ model School {
 
   users               User[]
   staffMembers        StaffMember[]
+  rolePermissions     SchoolRolePermission[]
   sessions            AcademicSession[]
   notificationSetting NotificationSetting?
   subscription        SchoolSubscription?
@@ -925,4 +926,19 @@ model StaffMember {
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId, isActive])
+}
+
+model SchoolRolePermission {
+  id             String     @id @default(cuid())
+  schoolId       String
+  systemRole     SystemRole
+  permissionCode String
+  allowed        Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, systemRole, permissionCode])
+  @@index([schoolId, systemRole])
 }
