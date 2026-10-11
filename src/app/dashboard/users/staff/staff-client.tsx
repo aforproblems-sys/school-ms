@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { SystemRole } from '@prisma/client';
-import { createStaffAction, listStaffAction, StaffRow } from '@/actions/staff.actions';
+import { createStaffAction, listStaffAction, deactivateStaffAction, StaffRow } from '@/actions/staff.actions';
 
 export default function StaffClient({ allowedRoles }: { allowedRoles: SystemRole[] }) {
   const [staff, setStaff] = useState<StaffRow[]>([]);
@@ -174,11 +174,12 @@ export default function StaffClient({ allowedRoles }: { allowedRoles: SystemRole
                 <th className="text-left px-4 py-3">Role</th>
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Created</th>
+                <th className="text-left px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="text-slate-200">
               {rows.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-6 text-slate-400">No staff found.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-6 text-slate-400">No staff found.</td></tr>
               ) : (
                 rows.map((u) => (
                   <tr key={u.id} className="border-b border-slate-900/80">
@@ -187,6 +188,25 @@ export default function StaffClient({ allowedRoles }: { allowedRoles: SystemRole
                     <td className="px-4 py-3 font-mono">{u.systemRole}</td>
                     <td className="px-4 py-3">{u.isActive ? 'ACTIVE' : 'INACTIVE'}</td>
                     <td className="px-4 py-3 text-slate-300">{new Date(u.createdAt).toLocaleString()}</td>
+                    <td className="px-4 py-3">
+                      {u.isActive ? (
+                        <button
+                          className="text-xs text-rose-300 hover:text-rose-200"
+                          onClick={() => {
+                            if (!confirm('Deactivate this staff member?')) return;
+                            startTransition(async () => {
+                              const res = await deactivateStaffAction(u.id);
+                              if (!res.success) setError(res.error || 'Failed');
+                              await load();
+                            });
+                          }}
+                        >
+                          Deactivate
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-500">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

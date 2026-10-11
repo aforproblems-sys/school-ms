@@ -128,3 +128,35 @@ export async function createStaffAction(input: unknown) {
     return { success: false as const, error: msg };
   }
 }
+
+export async function deactivateStaffAction(userId: string) {
+  const session = await getSession();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  if (!ADMIN_ROLES.includes(session.role)) {
+    return { success: false as const, error: 'Forbidden' };
+  }
+
+  // School admin can only deactivate users in their school
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, schoolId: true, systemRole: true, isActive: true },
+  });
+
+  if (!user) return { success: false as const, error: 'User not found' };
+
+  if (session.role === SystemRole.SCHOOL_ADMIN) {
+    if (!session.schoolId) return { success: false as const, error: 'Missing schoolId in session. Logout/login again.' };
+    if (user.schoolId !== session.schoolId) return { success: false as const, error: 'Forbidden (different school)' };
+    if (user.systemRole === SystemRole.SCHOOL_ADMIN) {
+      return { success: false as const, error: 'School Admin cannot deactivate School Admin' };
+    }
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: false, deletedAt: new Date() },
+  });
+
+  return { success: true as const };
+}
