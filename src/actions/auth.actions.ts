@@ -54,7 +54,6 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       avatarUrl: user.avatarUrl,
     });
 
-    // Record audit log
     await prisma.auditLog.create({
       data: {
         userId: user.id,
@@ -68,29 +67,28 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       success: true,
       redirectTo: getDefaultDashboard(user.systemRole),
     };
-    } catch (error) {
+  } catch (error) {
     console.error('Login error:', error);
-
-    const isPreview = process.env.VERCEL_ENV === 'preview';
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-
     return {
       success: false,
-      error: isPreview ? msg : 'An unexpected authentication error occurred',
+      error: 'An unexpected authentication error occurred',
     };
   }
+}
 
 export async function logoutAction() {
   const session = await getSession();
   if (session) {
-    await prisma.auditLog.create({
-      data: {
-        userId: session.userId,
-        action: AuditAction.LOGOUT,
-        entity: 'User',
-        entityId: session.userId,
-      },
-    }).catch(() => {});
+    await prisma.auditLog
+      .create({
+        data: {
+          userId: session.userId,
+          action: AuditAction.LOGOUT,
+          entity: 'User',
+          entityId: session.userId,
+        },
+      })
+      .catch(() => {});
   }
   await clearSessionCookie();
   redirect('/login');
