@@ -76,6 +76,10 @@ export function isAuthorizedRoute(
     return false;
   }
 
+  if (pathname.startsWith('/dashboard/settings/notifications')) {
+    return true;
+  }
+
   if (
     pathname.startsWith('/dashboard/settings') &&
     role !== 'SCHOOL_ADMIN'
