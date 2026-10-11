@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getAccessMatrixAction, listSchoolsAction, setRolePermissionAction } from '@/actions/access-control.actions';
 
 type ManagedRole = 'TEACHER' | 'ACCOUNTANT' | 'PARENT' | 'STUDENT';
 
@@ -19,15 +18,16 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
     setError(null);
     try {
       if (isSuperAdmin) {
-        const s: any = await listSchoolsAction();
-        if (s?.success) setSchools(s.schools || []);
-        else setError(s?.error || 'Failed to load schools');
+        const s = await fetch('/api/access-control/schools', { cache: 'no-store' }).then((r) => r.json());
+        if (s.success) setSchools(s.schools || []);
+        else setError(s.error || 'Failed to load schools');
       }
 
-      const m: any = await getAccessMatrixAction(schoolId || null);
-      if (!m?.success) {
+      const qs = schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : '';
+      const m = await fetch(`/api/access-control/matrix${qs}`, { cache: 'no-store' }).then((r) => r.json());
+      if (!m.success) {
         setMatrix(null);
-        setError(m?.error || 'Failed to load matrix');
+        setError(m.error || 'Failed to load matrix');
         return;
       }
       setMatrix(m);
@@ -50,13 +50,18 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
     setSaving(true);
     setError(null);
     try {
-      const res: any = await setRolePermissionAction({
-        targetSchoolId: isSuperAdmin ? (targetSchoolId || null) : null,
-        systemRole: role as any,
-        permissionCode: perm,
-        enabled,
-      });
-      if (!res?.success) setError(res?.error || 'Failed to save');
+      const res = await fetch('/api/access-control/toggle', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          schoolId: isSuperAdmin ? (targetSchoolId || null) : null,
+          systemRole: role,
+          permissionCode: perm,
+          enabled,
+        }),
+      }).then((r) => r.json());
+
+      if (!res.success) setError(res.error || 'Failed to save');
       await loadAll(isSuperAdmin ? targetSchoolId : '');
     } catch (e: any) {
       setError(e?.message || String(e) || 'Unexpected save error');
@@ -122,9 +127,7 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
                       <tr className="border-b border-slate-800">
                         <th className="text-left px-3 py-2">Permission</th>
                         {matrix.roles.map((r: ManagedRole) => (
-                          <th key={r} className="text-left px-3 py-2">
-                            {r}
-                          </th>
+                          <th key={r} className="text-left px-3 py-2">{r}</th>
                         ))}
                       </tr>
                     </thead>
@@ -137,11 +140,7 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
                             const enabled = !denied;
                             return (
                               <td key={r + perm} className="px-3 py-2">
-                                <input
-                                  type="checkbox"
-                                  checked={enabled}
-                                  onChange={(e) => onToggle(r, perm, e.target.checked)}
-                                />
+                                <input type="checkbox" checked={enabled} onChange={(e) => onToggle(r, perm, e.target.checked)} />
                               </td>
                             );
                           })}
