@@ -27,20 +27,34 @@ export type StaffMemberRow = {
   createdAt: string;
 };
 
+function requireAdminSchool(session: { role: SystemRole; schoolId?: string | null }) {
+  if (!ADMIN_ROLES.includes(session.role)) return { ok: false as const, error: 'Forbidden' };
+  if (!session.schoolId) return { ok: false as const, error: 'Missing schoolId in session. Logout/login again.' };
+  return { ok: true as const, schoolId: session.schoolId };
+}
+
+async function assertSameSchool(session: any, id: string) {
+  const staff = await prisma.staffMember.findUnique({
+    where: { id },
+    select: { id: true, schoolId: true, deletedAt: true },
+  });
+  if (!staff || staff.deletedAt) return { ok: false as const, error: 'Not found' };
+
+  if (session.role === SystemRole.SCHOOL_ADMIN && staff.schoolId !== session.schoolId) {
+    return { ok: false as const, error: 'Forbidden' };
+  }
+  return { ok: true as const };
+}
+
 export async function listStaffMembersAction() {
   const session = await getSession();
   if (!session) return { success: false as const, error: 'Unauthorized', staff: [] as StaffMemberRow[] };
-  if (!ADMIN_ROLES.includes(session.role)) return { success: false as const, error: 'Forbidden', staff: [] as StaffMemberRow[] };
 
-  if (session.role === SystemRole.SCHOOL_ADMIN && !session.schoolId) {
-    return { success: false as const, error: 'Missing schoolId in session. Logout/login again.', staff: [] as StaffMemberRow[] };
-  }
-
-  const schoolId = session.role === SystemRole.SUPER_ADMIN ? session.schoolId : session.schoolId;
-  if (!schoolId) return { success: false as const, error: 'No school selected for Super Admin.', staff: [] as StaffMemberRow[] };
+  const chk = requireAdminSchool(session);
+  if (!chk.ok) return { success: false as const, error: chk.error, staff: [] as StaffMemberRow[] };
 
   const staff = await prisma.staffMember.findMany({
-    where: { schoolId },
+    where: { schoolId: chk.schoolId, deletedAt: null },
     orderBy: { createdAt: 'desc' },
     take: 500,
   });
@@ -63,26 +77,21 @@ export async function listStaffMembersAction() {
 export async function createStaffMemberAction(input: unknown) {
   const session = await getSession();
   if (!session) return { success: false as const, error: 'Unauthorized' };
-  if (!ADMIN_ROLES.includes(session.role)) return { success: false as const, error: 'Forbidden' };
+
+  const chk = requireAdminSchool(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
 
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false as const, error: 'Validation failed', fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  if (session.role === SystemRole.SCHOOL_ADMIN && !session.schoolId) {
-    return { success: false as const, error: 'Missing schoolId in session. Logout/login again.' };
-  }
-
-  const schoolId = session.schoolId;
-  if (!schoolId) return { success: false as const, error: 'No school selected for Super Admin.' };
-
   const d = parsed.data;
   const monthlyPay = d.monthlyPay == null || d.monthlyPay === '' ? '0.00' : String(d.monthlyPay);
 
   const staff = await prisma.staffMember.create({
     data: {
-      schoolId,
+      schoolId: chk.schoolId,
       fullName: d.fullName,
       designation: d.designation,
       phoneNumber: d.phoneNumber ?? null,
@@ -90,6 +99,7 @@ export async function createStaffMemberAction(input: unknown) {
       joiningDate: d.joiningDate ? new Date(d.joiningDate) : new Date(),
       notes: d.notes ?? null,
       isActive: true,
+      deletedAt: null,
     },
     select: { id: true },
   });
@@ -100,15 +110,40 @@ export async function createStaffMemberAction(input: unknown) {
 export async function deactivateStaffMemberAction(id: string) {
   const session = await getSession();
   if (!session) return { success: false as const, error: 'Unauthorized' };
-  if (!ADMIN_ROLES.includes(session.role)) return { success: false as const, error: 'Forbidden' };
 
-  const staff = await prisma.staffMember.findUnique({ where: { id }, select: { id: true, schoolId: true } });
-  if (!staff) return { success: false as const, error: 'Not found' };
+  const chk = requireAdminSchool(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
 
-  if (session.role === SystemRole.SCHOOL_ADMIN) {
-    if (!session.schoolId) return { success: false as const, error: 'Missing schoolId in session. Logout/login again.' };
-    if (staff.schoolId !== session.schoolId) return { success: false as const, error: 'Forbidden' };
-  }
+  const ok = await assertSameSchool(session, id);
+  if (!ok.ok) return { success: false as const, error: ok.error };
+
+  await prisma.staffMember.update({ where: { id }, data: { isActive: false } });
+  return { success: true as const };
+}
+
+export async function activateStaffMemberAction(id: string) {
+  const session = await getSession();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  const chk = requireAdminSchool(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
+
+  const ok = await assertSameSchool(session, id);
+  if (!ok.ok) return { success: false as const, error: ok.error };
+
+  await prisma.staffMember.update({ where: { id }, data: { isActive: true } });
+  return { success: true as const };
+}
+
+export async function deleteStaffMemberAction(id: string) {
+  const session = await getSession();
+  if (!session) return { success: false as const, error: 'Unauthorized' };
+
+  const chk = requireAdminSchool(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
+
+  const ok = await assertSameSchool(session, id);
+  if (!ok.ok) return { success: false as const, error: ok.error };
 
   await prisma.staffMember.update({
     where: { id },
