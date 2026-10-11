@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import {
   createStaffMemberAction,
   deactivateStaffMemberAction,
+  activateStaffMemberAction,
+  deleteStaffMemberAction,
   listStaffMembersAction,
   StaffMemberRow,
 } from '@/actions/staff-member.actions';
@@ -92,38 +94,65 @@ export default function StaffDirectoryClient() {
         <div className="grid gap-3 md:grid-cols-4">
           <div>
             <label className="block text-xs text-slate-400 mb-1">Full Name</label>
-            <input className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
-              value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            <input
+              className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
           </div>
           <div>
             <label className="block text-xs text-slate-400 mb-1">Designation</label>
-            <input className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
-              value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Guard / Cleaner / Peon" required />
+            <input
+              className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              placeholder="Guard / Cleaner / Peon"
+              required
+            />
           </div>
           <div>
             <label className="block text-xs text-slate-400 mb-1">Phone</label>
-            <input className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
-              value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+            <input
+              className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
           </div>
           <div>
             <label className="block text-xs text-slate-400 mb-1">Monthly Pay</label>
-            <input className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
-              value={monthlyPay} onChange={(e) => setMonthlyPay(e.target.value)} placeholder="e.g. 25000" />
+            <input
+              className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
+              value={monthlyPay}
+              onChange={(e) => setMonthlyPay(e.target.value)}
+              placeholder="e.g. 25000"
+            />
           </div>
           <div>
             <label className="block text-xs text-slate-400 mb-1">Joining Date</label>
-            <input type="date" className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
-              value={joiningDate} onChange={(e) => setJoiningDate(e.target.value)} />
+            <input
+              type="date"
+              className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
+              value={joiningDate}
+              onChange={(e) => setJoiningDate(e.target.value)}
+            />
           </div>
           <div className="md:col-span-3">
             <label className="block text-xs text-slate-400 mb-1">Notes</label>
-            <input className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
-              value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="optional" />
+            <input
+              className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-slate-100"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="optional"
+            />
           </div>
         </div>
 
-        <button type="submit" disabled={isPending}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+        >
           {isPending ? 'Working…' : 'Add Staff Member'}
         </button>
       </form>
@@ -131,7 +160,11 @@ export default function StaffDirectoryClient() {
       <div className="rounded-xl border border-slate-800 bg-slate-950/30">
         <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
           <h2 className="text-white font-semibold">Staff List</h2>
-          <button onClick={() => startTransition(() => void load())} className="text-xs text-slate-300 hover:text-white" disabled={isPending}>
+          <button
+            onClick={() => startTransition(() => void load())}
+            className="text-xs text-slate-300 hover:text-white"
+            disabled={isPending}
+          >
             Refresh
           </button>
         </div>
@@ -150,7 +183,11 @@ export default function StaffDirectoryClient() {
             </thead>
             <tbody className="text-slate-200">
               {data.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-6 text-slate-400">No staff found.</td></tr>
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-slate-400">
+                    No staff found.
+                  </td>
+                </tr>
               ) : (
                 data.map((s) => (
                   <tr key={s.id} className="border-b border-slate-900/80">
@@ -159,15 +196,15 @@ export default function StaffDirectoryClient() {
                     <td className="px-4 py-3 text-slate-300">{s.phoneNumber ?? '—'}</td>
                     <td className="px-4 py-3">{s.monthlyPay}</td>
                     <td className="px-4 py-3">{s.isActive ? 'ACTIVE' : 'INACTIVE'}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 space-x-3">
                       {s.isActive ? (
                         <button
-                          className="text-xs text-rose-300 hover:text-rose-200"
+                          className="text-xs text-amber-300 hover:text-amber-200"
                           onClick={() => {
                             if (!confirm('Deactivate this staff member?')) return;
                             startTransition(async () => {
-                              const res = await deactivateStaffMemberAction(s.id);
-                              if (!(res as any).success) setError((res as any).error || 'Failed');
+                              const res: any = await deactivateStaffMemberAction(s.id);
+                              if (!res.success) setError(res.error || 'Failed');
                               await load();
                             });
                           }}
@@ -175,8 +212,33 @@ export default function StaffDirectoryClient() {
                           Deactivate
                         </button>
                       ) : (
-                        <span className="text-xs text-slate-500">—</span>
+                        <button
+                          className="text-xs text-emerald-300 hover:text-emerald-200"
+                          onClick={() => {
+                            startTransition(async () => {
+                              const res: any = await activateStaffMemberAction(s.id);
+                              if (!res.success) setError(res.error || 'Failed');
+                              await load();
+                            });
+                          }}
+                        >
+                          Activate
+                        </button>
                       )}
+
+                      <button
+                        className="text-xs text-rose-300 hover:text-rose-200"
+                        onClick={() => {
+                          if (!confirm('Delete this staff member? (Will be removed from list)')) return;
+                          startTransition(async () => {
+                            const res: any = await deleteStaffMemberAction(s.id);
+                            if (!res.success) setError(res.error || 'Failed');
+                            await load();
+                          });
+                        }}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))
