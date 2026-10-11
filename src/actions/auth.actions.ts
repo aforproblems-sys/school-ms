@@ -68,14 +68,17 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       success: true,
       redirectTo: getDefaultDashboard(user.systemRole),
     };
-  } catch (error) {
+    } catch (error) {
     console.error('Login error:', error);
+
+    const isPreview = process.env.VERCEL_ENV === 'preview';
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+
     return {
       success: false,
-      error: 'An unexpected authentication error occurred',
+      error: isPreview ? msg : 'An unexpected authentication error occurred',
     };
   }
-}
 
 export async function logoutAction() {
   const session = await getSession();
