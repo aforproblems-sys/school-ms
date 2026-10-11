@@ -111,9 +111,7 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
                       <tr className="border-b border-slate-800">
                         <th className="text-left px-3 py-2">Permission</th>
                         {matrix.roles.map((r: SystemRole) => (
-                          <th key={r} className="text-left px-3 py-2">
-                            {r}
-                          </th>
+                          <th key={r} className="text-left px-3 py-2">{r}</th>
                         ))}
                       </tr>
                     </thead>
@@ -126,7 +124,11 @@ export default function AccessControlClient({ isSuperAdmin }: { isSuperAdmin: bo
                             const enabled = !denied;
                             return (
                               <td key={r + perm} className="px-3 py-2">
-                                <input type="checkbox" checked={enabled} onChange={(e) => onToggle(r, perm, e.target.checked)} />
+                                <input
+                                  type="checkbox"
+                                  checked={enabled}
+                                  onChange={(e) => onToggle(r, perm, e.target.checked)}
+                                />
                               </td>
                             );
                           })}
