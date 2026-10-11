@@ -222,6 +222,7 @@ model School {
   deletedAt        DateTime?
 
   users               User[]
+  staffMembers        StaffMember[]
   sessions            AcademicSession[]
   notificationSetting NotificationSetting?
   subscription        SchoolSubscription?
@@ -905,4 +906,23 @@ model BillingWebhookLog {
   createdAt DateTime @default(now())
 
   @@index([provider, eventType])
+}
+
+model StaffMember {
+  id          String    @id @default(cuid())
+  schoolId    String
+  fullName    String
+  designation String // Guard, Cleaner, Peon, Driver, etc
+  phoneNumber String?
+  monthlyPay  Decimal   @default(0.00) @db.Decimal(12, 2)
+  joiningDate DateTime  @default(now())
+  isActive    Boolean   @default(true)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, isActive])
 }
