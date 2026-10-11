@@ -47,13 +47,13 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     title: 'User Management',
-  {
-    title: 'Staff & Teachers',
-    href: '/dashboard/users/staff',
+    href: '/dashboard/users/students',
     icon: Users,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
-    href: '/dashboard/users/students',
+  {
+    title: 'Staff & Teachers',
+    href: '/dashboard/users/staff',
     icon: Users,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
