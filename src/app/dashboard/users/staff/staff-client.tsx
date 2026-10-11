@@ -56,7 +56,17 @@ export default function StaffClient({ allowedRoles }: { allowedRoles: SystemRole
       });
 
       if (!res.success) {
-        setError(res.error || 'Failed to create staff');
+        const anyRes = res as any;
+        const fe = anyRes.fieldErrors || null;
+        if (fe) {
+          const parts: string[] = [];
+          for (const [k, v] of Object.entries(fe)) {
+            if (Array.isArray(v) && v.length) parts.push(`${k}: ${v.join(', ')}`);
+          }
+          setError(parts.length ? parts.join(' | ') : (res.error || 'Validation failed'));
+        } else {
+          setError(res.error || 'Failed to create staff');
+        }
         return;
       }
 
