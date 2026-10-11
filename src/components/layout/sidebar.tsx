@@ -53,13 +53,13 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     title: 'Staff & Teachers',
-  {
-    title: 'Staff Directory (Non-Login)',
-    href: '/dashboard/users/staff-directory',
+    href: '/dashboard/users/staff',
     icon: Users,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
-    href: '/dashboard/users/staff',
+  {
+    title: 'Staff Directory (Non-Login)',
+    href: '/dashboard/users/staff-directory',
     icon: Users,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
