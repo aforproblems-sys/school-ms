@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { getSession, hashPassword } from '@/lib/auth';
 import { SystemRole } from '@prisma/client';
 
+const ADMIN_ROLES: SystemRole[] = [SystemRole.SUPER_ADMIN, SystemRole.SCHOOL_ADMIN];
+
 const createSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(2),
@@ -31,7 +33,7 @@ export async function listStaffAction() {
   if (!session) return { success: false as const, error: 'Unauthorized', staff: [] as StaffRow[] };
 
   // Only admins
-  if (![SystemRole.SUPER_ADMIN, SystemRole.SCHOOL_ADMIN].includes(session.role)) {
+  if (!ADMIN_ROLES.includes(session.role)) {
     return { success: false as const, error: 'Forbidden', staff: [] as StaffRow[] };
   }
 
@@ -63,7 +65,7 @@ export async function createStaffAction(input: unknown) {
   const session = await getSession();
   if (!session) return { success: false as const, error: 'Unauthorized' };
 
-  if (![SystemRole.SUPER_ADMIN, SystemRole.SCHOOL_ADMIN].includes(session.role)) {
+  if (!ADMIN_ROLES.includes(session.role)) {
     return { success: false as const, error: 'Forbidden' };
   }
 
