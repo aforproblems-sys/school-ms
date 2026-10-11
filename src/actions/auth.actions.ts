@@ -52,6 +52,7 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       fullName: user.fullName,
       role: user.systemRole,
       avatarUrl: user.avatarUrl,
+  schoolId: user.schoolId ?? null,
     });
 
     await prisma.auditLog.create({
