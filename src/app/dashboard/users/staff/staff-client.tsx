@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { SystemRole } from '@prisma/client';
-import { createStaffAction, listStaffAction, deactivateStaffAction, StaffRow } from '@/actions/staff.actions';
+import { createStaffAction, listStaffAction, deactivateStaffAction, activateStaffAction, deleteStaffAction, StaffRow } from '@/actions/staff.actions';
 
 export default function StaffClient({ allowedRoles }: { allowedRoles: SystemRole[] }) {
   const [staff, setStaff] = useState<StaffRow[]>([]);
@@ -188,15 +188,15 @@ export default function StaffClient({ allowedRoles }: { allowedRoles: SystemRole
                     <td className="px-4 py-3 font-mono">{u.systemRole}</td>
                     <td className="px-4 py-3">{u.isActive ? 'ACTIVE' : 'INACTIVE'}</td>
                     <td className="px-4 py-3 text-slate-300">{new Date(u.createdAt).toLocaleString()}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 space-x-3">
                       {u.isActive ? (
                         <button
-                          className="text-xs text-rose-300 hover:text-rose-200"
+                          className="text-xs text-amber-300 hover:text-amber-200"
                           onClick={() => {
                             if (!confirm('Deactivate this staff member?')) return;
                             startTransition(async () => {
                               const res = await deactivateStaffAction(u.id);
-                              if (!res.success) setError(res.error || 'Failed');
+                              if (!(res as any).success) setError((res as any).error || 'Failed');
                               await load();
                             });
                           }}
@@ -204,8 +204,33 @@ export default function StaffClient({ allowedRoles }: { allowedRoles: SystemRole
                           Deactivate
                         </button>
                       ) : (
-                        <span className="text-xs text-slate-500">—</span>
+                        <button
+                          className="text-xs text-emerald-300 hover:text-emerald-200"
+                          onClick={() => {
+                            startTransition(async () => {
+                              const res = await activateStaffAction(u.id);
+                              if (!(res as any).success) setError((res as any).error || 'Failed');
+                              await load();
+                            });
+                          }}
+                        >
+                          Activate
+                        </button>
                       )}
+
+                      <button
+                        className="text-xs text-rose-300 hover:text-rose-200"
+                        onClick={() => {
+                          if (!confirm('Delete this staff account?')) return;
+                          startTransition(async () => {
+                            const res = await deleteStaffAction(u.id);
+                            if (!(res as any).success) setError((res as any).error || 'Failed');
+                            await load();
+                          });
+                        }}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))

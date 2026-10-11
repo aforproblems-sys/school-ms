@@ -13,7 +13,6 @@ const createSchema = z.object({
   password: z.string().min(6),
   systemRole: z.enum(['TEACHER', 'ACCOUNTANT', 'SCHOOL_ADMIN']),
   phoneNumber: z.string().optional().nullable(),
-  // Teacher fields
   employeeId: z.string().optional().nullable(),
   qualification: z.string().optional().nullable(),
   joiningDate: z.string().optional().nullable(), // YYYY-MM-DD
@@ -28,14 +27,36 @@ export type StaffRow = {
   createdAt: string;
 };
 
+function requireAdmin(session: any) {
+  if (!session) return { ok: false as const, error: 'Unauthorized' };
+  if (!ADMIN_ROLES.includes(session.role)) return { ok: false as const, error: 'Forbidden' };
+  return { ok: true as const };
+}
+
+async function getTargetUser(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, schoolId: true, systemRole: true, isActive: true, deletedAt: true },
+  });
+}
+
+async function assertCanManage(session: any, userId: string) {
+  const user = await getTargetUser(userId);
+  if (!user) return { ok: false as const, error: 'User not found' };
+
+  if (session.role === SystemRole.SCHOOL_ADMIN) {
+    if (!session.schoolId) return { ok: false as const, error: 'Missing schoolId in session. Logout/login again.' };
+    if (user.schoolId !== session.schoolId) return { ok: false as const, error: 'Forbidden (different school)' };
+    if (user.systemRole === SystemRole.SCHOOL_ADMIN) return { ok: false as const, error: 'School Admin cannot manage School Admin' };
+  }
+
+  return { ok: true as const, user };
+}
+
 export async function listStaffAction() {
   const session = await getSession();
-  if (!session) return { success: false as const, error: 'Unauthorized', staff: [] as StaffRow[] };
-
-  // Only admins
-  if (!ADMIN_ROLES.includes(session.role)) {
-    return { success: false as const, error: 'Forbidden', staff: [] as StaffRow[] };
-  }
+  const chk = requireAdmin(session);
+  if (!chk.ok) return { success: false as const, error: chk.error, staff: [] as StaffRow[] };
 
   const schoolId = session.role === SystemRole.SUPER_ADMIN ? undefined : (session.schoolId ?? undefined);
   if (session.role !== SystemRole.SUPER_ADMIN && !schoolId) {
@@ -44,6 +65,7 @@ export async function listStaffAction() {
 
   const staff = await prisma.user.findMany({
     where: {
+      deletedAt: null,
       ...(schoolId ? { schoolId } : {}),
       systemRole: { in: [SystemRole.SCHOOL_ADMIN, SystemRole.TEACHER, SystemRole.ACCOUNTANT] },
     },
@@ -54,41 +76,30 @@ export async function listStaffAction() {
 
   return {
     success: true as const,
-    staff: staff.map((u) => ({
-      ...u,
-      createdAt: u.createdAt.toISOString(),
-    })),
+    staff: staff.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() })),
   };
 }
 
 export async function createStaffAction(input: unknown) {
   const session = await getSession();
-  if (!session) return { success: false as const, error: 'Unauthorized' };
-
-  if (!ADMIN_ROLES.includes(session.role)) {
-    return { success: false as const, error: 'Forbidden' };
-  }
+  const chk = requireAdmin(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
 
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false as const, error: 'Validation failed', fieldErrors: parsed.error.flatten().fieldErrors };
   }
-
   const data = parsed.data;
 
-  // School Admin cannot create School Admin
   if (session.role !== SystemRole.SUPER_ADMIN && data.systemRole === 'SCHOOL_ADMIN') {
     return { success: false as const, error: 'Only Super Admin can create School Admin.' };
   }
 
-  const schoolId =
-    session.role === SystemRole.SUPER_ADMIN ? (session.schoolId ?? null) : (session.schoolId ?? null);
-
+  const schoolId = session.schoolId ?? null;
   if (!schoolId && data.systemRole !== 'SCHOOL_ADMIN') {
     return { success: false as const, error: 'No schoolId found for this admin. Logout/login again.' };
   }
 
-  // Teacher profile required fields
   if (data.systemRole === 'TEACHER') {
     if (!data.employeeId || !data.qualification) {
       return { success: false as const, error: 'Teacher requires employeeId and qualification.' };
@@ -105,8 +116,9 @@ export async function createStaffAction(input: unknown) {
         fullName: data.fullName,
         phoneNumber: data.phoneNumber ?? null,
         systemRole: data.systemRole as SystemRole,
-        schoolId: schoolId,
+        schoolId,
         isActive: true,
+        deletedAt: null,
         ...(data.systemRole === 'TEACHER'
           ? {
               teacherProfile: {
@@ -124,35 +136,51 @@ export async function createStaffAction(input: unknown) {
 
     return { success: true as const, user };
   } catch (e: any) {
-    const msg = e?.message || 'Failed to create staff';
-    return { success: false as const, error: msg };
+    return { success: false as const, error: e?.message || 'Failed to create staff' };
   }
 }
 
 export async function deactivateStaffAction(userId: string) {
   const session = await getSession();
-  if (!session) return { success: false as const, error: 'Unauthorized' };
+  const chk = requireAdmin(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
 
-  if (!ADMIN_ROLES.includes(session.role)) {
-    return { success: false as const, error: 'Forbidden' };
-  }
+  const ok = await assertCanManage(session, userId);
+  if (!ok.ok) return { success: false as const, error: ok.error };
 
-  // School admin can only deactivate users in their school
-  const user = await prisma.user.findUnique({
+  await prisma.user.update({
     where: { id: userId },
-    select: { id: true, schoolId: true, systemRole: true, isActive: true },
+    data: { isActive: false },
   });
 
-  if (!user) return { success: false as const, error: 'User not found' };
+  return { success: true as const };
+}
 
-  if (session.role === SystemRole.SCHOOL_ADMIN) {
-    if (!session.schoolId) return { success: false as const, error: 'Missing schoolId in session. Logout/login again.' };
-    if (user.schoolId !== session.schoolId) return { success: false as const, error: 'Forbidden (different school)' };
-    if (user.systemRole === SystemRole.SCHOOL_ADMIN) {
-      return { success: false as const, error: 'School Admin cannot deactivate School Admin' };
-    }
-  }
+export async function activateStaffAction(userId: string) {
+  const session = await getSession();
+  const chk = requireAdmin(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
 
+  const ok = await assertCanManage(session, userId);
+  if (!ok.ok) return { success: false as const, error: ok.error };
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: true, deletedAt: null },
+  });
+
+  return { success: true as const };
+}
+
+export async function deleteStaffAction(userId: string) {
+  const session = await getSession();
+  const chk = requireAdmin(session);
+  if (!chk.ok) return { success: false as const, error: chk.error };
+
+  const ok = await assertCanManage(session, userId);
+  if (!ok.ok) return { success: false as const, error: ok.error };
+
+  // Soft delete (safe)
   await prisma.user.update({
     where: { id: userId },
     data: { isActive: false, deletedAt: new Date() },
