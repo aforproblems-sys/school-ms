@@ -36,9 +36,9 @@ function requireAdminSchool(session: { role: SystemRole; schoolId?: string | nul
 async function assertSameSchool(session: any, id: string) {
   const staff = await prisma.staffMember.findUnique({
     where: { id },
-    select: { id: true, schoolId: true, deletedAt: true },
+    select: { id: true, schoolId: true },
   });
-  if (!staff || staff.deletedAt) return { ok: false as const, error: 'Not found' };
+  if (!staff) return { ok: false as const, error: 'Not found' };
 
   if (session.role === SystemRole.SCHOOL_ADMIN && staff.schoolId !== session.schoolId) {
     return { ok: false as const, error: 'Forbidden' };
@@ -54,7 +54,7 @@ export async function listStaffMembersAction() {
   if (!chk.ok) return { success: false as const, error: chk.error, staff: [] as StaffMemberRow[] };
 
   const staff = await prisma.staffMember.findMany({
-    where: { schoolId: chk.schoolId, deletedAt: null },
+    where: { schoolId: chk.schoolId },
     orderBy: { createdAt: 'desc' },
     take: 500,
   });
@@ -99,7 +99,6 @@ export async function createStaffMemberAction(input: unknown) {
       joiningDate: d.joiningDate ? new Date(d.joiningDate) : new Date(),
       notes: d.notes ?? null,
       isActive: true,
-      deletedAt: null,
     },
     select: { id: true },
   });
@@ -145,10 +144,7 @@ export async function deleteStaffMemberAction(id: string) {
   const ok = await assertSameSchool(session, id);
   if (!ok.ok) return { success: false as const, error: ok.error };
 
-  await prisma.staffMember.update({
-    where: { id },
-    data: { isActive: false, deletedAt: new Date() },
-  });
-
+  // ✅ Permanent delete
+  await prisma.staffMember.delete({ where: { id } });
   return { success: true as const };
 }
