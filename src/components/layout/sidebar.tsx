@@ -154,6 +154,12 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   },
   {
+    title: 'Access Control',
+    href: '/dashboard/settings/access-control',
+    icon: ShieldCheck,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
+  },
+  {
     title: 'Reports & Analytics',
     href: '/dashboard/reports',
     icon: BarChart3,
