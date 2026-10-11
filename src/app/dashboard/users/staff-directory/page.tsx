@@ -7,7 +7,7 @@ export default async function StaffDirectoryPage() {
   const session = await getSession();
   if (!session) redirect('/login');
 
-  if (![SystemRole.SUPER_ADMIN, SystemRole.SCHOOL_ADMIN].includes(session.role)) {
+  if (session.role !== SystemRole.SUPER_ADMIN && session.role !== SystemRole.SCHOOL_ADMIN) {
     redirect('/forbidden');
   }
 
