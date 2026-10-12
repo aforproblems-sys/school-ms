@@ -47,3 +47,11 @@ ci_failed.log
 
 # Allow committing env template
 !.env.example
+
+# env
+.env
+.env.*
+!.env.example
+
+# prisma backups
+prisma/migrations_backup_*/
