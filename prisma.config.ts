@@ -3,6 +3,7 @@ import { defineConfig } from '@prisma/config';
 
 export default defineConfig({
   datasource: {
-    url: process.env.DATABASE_URL!,
+    // Use DIRECT_URL for migrations; fallback to DATABASE_URL
+    url: process.env.DIRECT_URL || process.env.DATABASE_URL!,
   },
 });
