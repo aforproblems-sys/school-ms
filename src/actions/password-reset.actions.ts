@@ -19,13 +19,18 @@ export async function requestPasswordReset(emailRaw: string) {
   const email = String(emailRaw || "").trim().toLowerCase();
   if (!email) return { ok: true };
 
+  console.log("[ForgotPassword] request for:", email);
+
   const user = await prisma.user.findFirst({
     where: { email: { equals: email, mode: "insensitive" } },
     select: { id: true, email: true },
   });
 
   // Security: always return ok (don't reveal if account exists)
-  if (!user) return { ok: true };
+  if (!user) {
+    console.log("[ForgotPassword] user not found for:", email);
+    return { ok: true };
+  }
 
   // one active token per user
   await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
@@ -39,6 +44,8 @@ export async function requestPasswordReset(emailRaw: string) {
   });
 
   const url = `${getAppUrl()}/reset-password?token=${token}`;
+
+  console.log("[ForgotPassword] reset link:", url);
 
   // If SMTP not configured yet, just log link (DEV friendly)
   if (!hasSmtpEnv()) {

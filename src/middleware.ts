@@ -4,7 +4,7 @@ import { verifySessionToken } from '@/lib/middleware-auth';
 import { getDefaultDashboard, isAuthorizedRoute } from '@/lib/middleware-rbac';
 import { getMaintenanceStatus, isRoleAllowedInMaintenance } from '@/lib/middleware-maintenance';
 
-const PUBLIC_ROUTES = ['/login', '/forgot-password', '/unauthorized', '/forbidden', '/maintenance', '/api/health'];
+const PUBLIC_ROUTES = ['/login', '/forgot-password', '/reset-password', '/unauthorized', '/forbidden', '/maintenance', '/api/health'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
