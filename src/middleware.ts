@@ -40,6 +40,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(getDefaultDashboard(session.role), request.url));
   }
 
+  // TEACHER_BLOCKED_ROUTES
+  // Teacher ko yahan se admin wali screens block kar rahe hain
+  if (session?.role === 'TEACHER') {
+    const blockedPrefixes = [
+      '/dashboard/users/students',
+      '/dashboard/examinations/exams',
+    ];
+    if (blockedPrefixes.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL('/forbidden', request.url));
+    }
+  }
+
   // 5. Portal Access Control (deny via session.permissions: "!portal.teacher" etc.)
   if (session && pathname.startsWith('/dashboard')) {
     const denied = new Set(
