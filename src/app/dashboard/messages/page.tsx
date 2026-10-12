@@ -378,7 +378,6 @@ export default function MessagesPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {              {/* Message Composer Footer */}
               <form onSubmit={handleSend} className="p-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
                 <div className="flex items-center gap-2">
                   <AttachmentUploader
