@@ -6,7 +6,7 @@ import { UserSession } from '@/types/auth';
 import { ROLE_NAMES } from '@/lib/rbac';
 import { getInitials } from '@/lib/utils';
 import { logoutAction } from '@/actions/auth.actions';
-import { removeMyAvatar, updateMyAvatar } from '@/actions/avatar.actions';
+import { removeMyAvatarForm, updateMyAvatarForm } from '@/actions/avatar.actions';
 import { LogOut, Shield, User, Camera, Trash2 } from 'lucide-react';
 
 interface UserNavProps {
@@ -69,7 +69,7 @@ export function UserNav({ user, avatarUrl }: UserNavProps) {
               </Link>
 
               {/* Change DP (auto upload on select) */}
-              <form action={updateMyAvatar} className="px-3 py-2">
+              <form action={updateMyAvatarForm} className="px-3 py-2">
                 <label className="w-full inline-flex items-center gap-2 justify-center cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-800">
                   <Camera className="w-3.5 h-3.5" />
                   Change DP
@@ -89,7 +89,7 @@ export function UserNav({ user, avatarUrl }: UserNavProps) {
 
               {/* Remove DP */}
               {avatarUrl ? (
-                <form action={removeMyAvatar} className="px-3 pb-2">
+                <form action={removeMyAvatarForm} className="px-3 pb-2">
                   <button
                     type="submit"
                     className="w-full flex items-center gap-2 justify-center rounded-lg border border-rose-300 dark:border-rose-900 px-3 py-2 text-xs text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30"
