@@ -40,6 +40,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(getDefaultDashboard(session.role), request.url));
   }
 
+  // 5. Portal Access Control (deny via session.permissions: "!portal.teacher" etc.)
+  if (session && pathname.startsWith('/dashboard')) {
+    const denied = new Set(
+      (session.permissions || [])
+        .filter((p) => typeof p === 'string' && p.startsWith('!'))
+        .map((p) => p.slice(1))
+    );
+
+    const PORTAL_DENY_RULES: Array<[string, string]> = [
+      ['portal.teacher', '/dashboard/teacher'],
+      ['portal.accountant', '/dashboard/accountant'],
+      ['portal.parent', '/dashboard/parent'],
+      ['portal.student', '/dashboard/student'],
+    ];
+
+    for (const [perm, prefix] of PORTAL_DENY_RULES) {
+      if (denied.has(perm) && pathname.startsWith(prefix)) {
+        return NextResponse.redirect(new URL('/forbidden', request.url));
+      }
+    }
+  }
+
   // 5. Role Authorization Guard -> redirect to /forbidden if role is unauthorized
   if (session && pathname.startsWith('/dashboard')) {
     const isAllowed = isAuthorizedRoute(pathname, session.role);
