@@ -4,6 +4,7 @@ import { UserNav } from './user-nav';
 import { NotificationDropdown } from './notification-dropdown';
 import { MobileSidebar } from './sidebar';
 import { Search } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface NavbarProps {
   user: UserSession;
@@ -33,6 +34,7 @@ export function Navbar({ user }: NavbarProps) {
       <div className="flex items-center gap-2 sm:gap-4">
         {/* Real-Time Notifications Dropdown */}
         <NotificationDropdown userId={user.userId} />
+<ThemeToggle />
 
         <div className="h-5 w-px bg-slate-200 dark:bg-slate-800" />
 
