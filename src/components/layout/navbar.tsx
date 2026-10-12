@@ -5,26 +5,18 @@ import { NotificationDropdown } from './notification-dropdown';
 import { MobileSidebar } from './sidebar';
 import { Search } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { prisma } from '@/lib/prisma';
 
 interface NavbarProps {
   user: UserSession;
 }
 
-export async function Navbar({ user }: NavbarProps) {
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.userId },
-    select: { avatarUrl: true },
-  });
-
+export function Navbar({ user }: NavbarProps) {
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-4 sm:px-6 gap-3">
-      {/* Mobile Drawer Trigger */}
       <div className="flex items-center gap-2">
         <MobileSidebar role={user.role} />
       </div>
 
-      {/* Quick Search */}
       <div className="flex items-center gap-4 flex-1 max-w-md">
         <div className="relative w-full">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -36,15 +28,13 @@ export async function Navbar({ user }: NavbarProps) {
         </div>
       </div>
 
-      {/* Right Navbar Actions */}
       <div className="flex items-center gap-2 sm:gap-4">
         <NotificationDropdown userId={user.userId} />
         <ThemeToggle />
 
         <div className="h-5 w-px bg-slate-200 dark:bg-slate-800" />
 
-        {/* User Account Nav */}
-        <UserNav user={user} avatarUrl={dbUser?.avatarUrl ?? null} />
+        <UserNav user={user} />
       </div>
     </header>
   );

@@ -14,11 +14,6 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
   const maintenanceStatus = getMaintenanceStatus();
-
-  // Routes that any authenticated user can access (skip RBAC route matrix)
-  const SKIP_RBAC_ROUTES = ['/dashboard/settings/profile'];
-  const skipRbac = SKIP_RBAC_ROUTES.some((r) => pathname.startsWith(r));
-
   // 1. Maintenance Mode Interceptor
   if (maintenanceStatus.enabled && !pathname.startsWith('/maintenance') && !pathname.startsWith('/api/health')) {
     const isAllowedToBypass = session ? isRoleAllowedInMaintenance(session.role) : false;
@@ -120,7 +115,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 5. Role Authorization Guard -> redirect to /forbidden if role is unauthorized
-  if (session && pathname.startsWith('/dashboard') && !skipRbac) {
+  if (session && pathname.startsWith('/dashboard')) {
     const isAllowed = isAuthorizedRoute(pathname, session.role);
     if (!isAllowed) {
       return NextResponse.redirect(new URL('/forbidden', request.url));
