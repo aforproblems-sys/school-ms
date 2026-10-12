@@ -1,13 +1,14 @@
 import { resetPassword } from "@/actions/password-reset.actions";
 import { redirect } from "next/navigation";
 
-export default function ResetPasswordPage({
+export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams?: { token?: string; error?: string };
+  searchParams?: any;
 }) {
-  const token = searchParams?.token || "";
-  const error = searchParams?.error || "";
+  const sp = (await searchParams) || {};
+  const token = typeof sp.token === "string" ? sp.token : "";
+  const error = typeof sp.error === "string" ? sp.error : "";
 
   async function action(formData: FormData) {
     "use server";
@@ -50,22 +51,12 @@ export default function ResetPasswordPage({
 
         <div className="space-y-1">
           <label className="text-sm">New password</label>
-          <input
-            name="password"
-            type="password"
-            required
-            className="w-full rounded border px-3 py-2"
-          />
+          <input name="password" type="password" required className="w-full rounded border px-3 py-2" />
         </div>
 
         <div className="space-y-1">
           <label className="text-sm">Confirm password</label>
-          <input
-            name="confirm"
-            type="password"
-            required
-            className="w-full rounded border px-3 py-2"
-          />
+          <input name="confirm" type="password" required className="w-full rounded border px-3 py-2" />
         </div>
 
         <button className="w-full rounded bg-black px-3 py-2 text-white">
