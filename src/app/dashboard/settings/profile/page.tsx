@@ -4,20 +4,15 @@ import { redirect } from "next/navigation";
 import { verifySessionToken } from "@/lib/middleware-auth";
 import { prisma } from "@/lib/prisma";
 
-export default async function ProfilePage({
-  searchParams,
-}: {
-  searchParams?: any;
-}) {
+export default async function ProfilePage({ searchParams }: { searchParams?: any }) {
   const sp = (await searchParams) || {};
   const updated = sp.updated === "1";
 
   const token = (await cookies()).get("sms_session_token")?.value;
   const session = token ? await verifySessionToken(token) : null;
 
-  // UserSession me `user` object nahi hai, so userId direct use karo
+  // your UserSession type doesn't have session.user, so use userId directly
   const userId = (session as any)?.userId || (session as any)?.id;
-
   if (!userId) redirect("/login");
 
   const user = await prisma.user.findUnique({
@@ -48,9 +43,7 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      {updated ? (
-        <p className="mt-3 text-sm text-green-600">DP updated successfully.</p>
-      ) : null}
+      {updated ? <p className="mt-3 text-sm text-green-600">DP updated successfully.</p> : null}
 
       <form action={action} className="mt-4 space-y-3">
         <div className="space-y-1">
@@ -58,9 +51,7 @@ export default async function ProfilePage({
           <input name="avatar" type="file" accept="image/*" required />
         </div>
 
-        <button className="rounded bg-black px-3 py-2 text-white">
-          Save DP
-        </button>
+        <button className="rounded bg-black px-3 py-2 text-white">Save DP</button>
       </form>
     </div>
   );
