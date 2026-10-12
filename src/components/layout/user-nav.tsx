@@ -69,7 +69,7 @@ export function UserNav({ user, avatarUrl }: UserNavProps) {
               </Link>
 
               {/* Change DP (auto upload on select) */}
-              <form action={updateMyAvatarForm} className="px-3 py-2">
+              <form encType="multipart/form-data" action={updateMyAvatarForm} className="px-3 py-2">
                 <label className="w-full inline-flex items-center gap-2 justify-center cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-800">
                   <Camera className="w-3.5 h-3.5" />
                   Change DP
