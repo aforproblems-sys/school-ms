@@ -80,6 +80,9 @@ export function isAuthorizedRoute(
     return true;
   }
 
+  if (pathname.startsWith('/dashboard/settings/notifications')) return true;
+  if (pathname.startsWith('/dashboard/settings/change-password')) return true;
+
   if (
     pathname.startsWith('/dashboard/settings') &&
     role !== 'SCHOOL_ADMIN'

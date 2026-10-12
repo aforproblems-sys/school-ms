@@ -142,6 +142,12 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'ACCOUNTANT', 'PARENT', 'STUDENT'],
   },
   {
+    title: 'Change Password',
+    href: '/dashboard/settings/change-password',
+    icon: Settings,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'ACCOUNTANT', 'PARENT', 'STUDENT'],
+  },
+  {
     title: 'Notification Settings',
     href: '/dashboard/settings/notifications',
     icon: Settings,
