@@ -347,7 +347,7 @@ export async function createStudentAction(values: StudentFormValues) {
       roleLabel: 'Student',
       username: data.email.toLowerCase(),
       password: data.studentPassword!,
-    }).catch(() => {});
+    }).catch((e) => { console.error('EMAIL_SEND_FAILED:', e?.message || e); });
 
     const guardianEmail = (data.guardianEmail || '').trim().toLowerCase();
     if (guardianEmail && data.guardianPassword && data.guardianPassword.trim().length >= 6) {
@@ -357,7 +357,7 @@ export async function createStudentAction(values: StudentFormValues) {
         roleLabel: 'Parent/Guardian',
         username: guardianEmail,
         password: data.guardianPassword,
-      }).catch(() => {});
+      }).catch((e) => { console.error('EMAIL_SEND_FAILED:', e?.message || e); });
     }
 
     broadcastStudentChange('create', result.id, { fullName: data.fullName });
