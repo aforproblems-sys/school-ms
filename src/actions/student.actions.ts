@@ -202,6 +202,15 @@ export async function createStudentAction(values: StudentFormValues) {
 
   const data = validation.data;
 
+  if (!data.studentPassword || data.studentPassword.trim().length < 6) {
+    return { success: false, error: 'Student password is required (min 6 chars)' };
+  }
+
+  const studentPasswordHash = await hashPassword(data.studentPassword);
+  const guardianPasswordHash = data.guardianPassword && data.guardianPassword.trim().length >= 6
+    ? await hashPassword(data.guardianPassword)
+    : await hashPassword(Math.random().toString(36).slice(2) + 'A1!');
+
   try {
     // Check if admission number or email exists
     const existingAdmission = await prisma.student.findUnique({
@@ -238,15 +247,12 @@ export async function createStudentAction(values: StudentFormValues) {
       }
     }
 
-    const defaultPasswordHash = await hashPassword('Password123!');
-
-
     const result = await prisma.$transaction(async (tx: any) => {
       // 1. Create Student User
       const user = await tx.user.create({
         data: {
           email: data.email.toLowerCase(),
-          passwordHash: defaultPasswordHash,
+          passwordHash: studentPasswordHash,
           fullName: data.fullName,
           phoneNumber: data.phoneNumber || null,
           avatarUrl: data.avatarUrl || null,
@@ -279,7 +285,7 @@ export async function createStudentAction(values: StudentFormValues) {
         parentUser = await tx.user.create({
           data: {
             email: data.guardianEmail && data.guardianEmail !== '' ? data.guardianEmail.toLowerCase() : `guardian.${data.admissionNo.toLowerCase()}@school.com`,
-            passwordHash: defaultPasswordHash,
+            passwordHash: studentPasswordHash,
             fullName: data.guardianName,
             phoneNumber: data.guardianPhone,
             systemRole: SystemRole.PARENT,

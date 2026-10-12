@@ -37,6 +37,8 @@ export function StudentFormDialog({
   } = useForm<StudentFormValues>({
     resolver: zodResolver(studentFormSchema),
     defaultValues: {
+      studentPassword: '',
+      guardianPassword: '',
       fullName: initialData?.user?.fullName || '',
       email: initialData?.user?.email || '',
       phoneNumber: initialData?.user?.phoneNumber || '',
