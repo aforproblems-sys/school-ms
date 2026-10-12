@@ -14,7 +14,9 @@ export default async function ProfilePage({
 
   const token = (await cookies()).get("sms_session_token")?.value;
   const session = token ? await verifySessionToken(token) : null;
-  const userId = session?.userId || session?.user?.id || session?.id;
+
+  // UserSession me `user` object nahi hai, so userId direct use karo
+  const userId = (session as any)?.userId || (session as any)?.id;
 
   if (!userId) redirect("/login");
 
