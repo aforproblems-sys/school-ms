@@ -23,16 +23,18 @@ export default async function ProfilePage({ searchParams }: { searchParams?: any
 
   async function uploadAction(formData: FormData) {
     "use server";
-    const res = await updateMyAvatar(formData);
+    const res: any = await updateMyAvatar(formData);
     if (res.ok) redirect("/dashboard/settings/profile?updated=1");
-    redirect(`/dashboard/settings/profile?error=${res.error}`);
+    const d = encodeURIComponent(res.detail || "");
+    redirect(`/dashboard/settings/profile?error=${res.error || "UPLOAD_FAILED"}&detail=${d}`);
   }
 
   async function removeAction() {
     "use server";
-    const res = await removeMyAvatar();
+    const res: any = await removeMyAvatar();
     if (res.ok) redirect("/dashboard/settings/profile?removed=1");
-    redirect(`/dashboard/settings/profile?error=${res.error}`);
+    const d = encodeURIComponent(res.detail || "");
+    redirect(`/dashboard/settings/profile?error=${res.error || "REMOVE_FAILED"}&detail=${d}`);
   }
 
   return (
@@ -40,8 +42,9 @@ export default async function ProfilePage({ searchParams }: { searchParams?: any
       <h1 className="text-2xl font-semibold">Profile Settings</h1>
 
       {error ? (
-        <div className="mt-3 rounded border border-rose-300 px-3 py-2 text-sm text-rose-700">
-          DP Error: {error}\n{detail ? `\nDetail: ` : ""}
+        <div className="mt-3 rounded border border-rose-300 px-3 py-2 text-sm text-rose-700 whitespace-pre-wrap">
+          <div><b>DP Error:</b> {error}</div>
+          {detail ? <div className="mt-1"><b>Detail:</b> {detail}</div> : null}
         </div>
       ) : null}
 
