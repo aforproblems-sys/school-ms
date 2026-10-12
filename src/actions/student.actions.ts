@@ -8,6 +8,7 @@ import { hashPassword } from '@/lib/auth';
 import { AuditAction, Gender, SystemRole } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { broadcastStudentChange } from '@/lib/realtime';
+import { sendCredentialsEmail } from '@/lib/mailer';
 
 export interface StudentFilterParams {
   page?: number;
@@ -338,6 +339,26 @@ export async function createStudentAction(values: StudentFormValues) {
 
       return student;
     });
+
+    // Send credentials emails (best-effort)
+    await sendCredentialsEmail({
+      to: data.email.toLowerCase(),
+      name: data.fullName,
+      roleLabel: 'Student',
+      username: data.email.toLowerCase(),
+      password: data.studentPassword!,
+    }).catch(() => {});
+
+    const guardianEmail = (data.guardianEmail || '').trim().toLowerCase();
+    if (guardianEmail && data.guardianPassword && data.guardianPassword.trim().length >= 6) {
+      await sendCredentialsEmail({
+        to: guardianEmail,
+        name: data.guardianName,
+        roleLabel: 'Parent/Guardian',
+        username: guardianEmail,
+        password: data.guardianPassword,
+      }).catch(() => {});
+    }
 
     broadcastStudentChange('create', result.id, { fullName: data.fullName });
     revalidatePath('/dashboard/users/students');
