@@ -46,6 +46,19 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       };
     }
 
+    const permissions = user.schoolId
+      ? (
+          await prisma.schoolRolePermission.findMany({
+            where: {
+              schoolId: user.schoolId,
+              systemRole: user.systemRole,
+              allowed: false,
+            },
+            select: { permissionCode: true },
+          })
+        ).map((d) => `!${d.permissionCode}`)
+      : [];
+
     await createSessionCookie({
       userId: user.id,
       email: user.email,
@@ -53,6 +66,7 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       role: user.systemRole,
       avatarUrl: user.avatarUrl,
   schoolId: user.schoolId ?? null,
+      permissions,
     });
 
     await prisma.auditLog.create({
