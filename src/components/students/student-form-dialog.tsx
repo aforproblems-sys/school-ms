@@ -166,6 +166,20 @@ export function StudentFormDialog({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Student Password *
+                </label>
+                <input
+                  {...register('studentPassword')}
+                  type="password"
+                  placeholder="Set login password"
+                  required={!isEditing}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {errors.studentPassword && <p className="text-[11px] text-rose-500 mt-1">{errors.studentPassword.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Admission Number *
                 </label>
                 <input
@@ -332,6 +346,19 @@ export function StudentFormDialog({
                   placeholder="parent@school.com"
                   className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Guardian Password
+                </label>
+                <input
+                  {...register('guardianPassword')}
+                  type="password"
+                  placeholder="Optional (for parent login)"
+                  className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {errors.guardianPassword && <p className="text-[11px] text-rose-500 mt-1">{errors.guardianPassword.message}</p>}
               </div>
             </div>
           </div>
