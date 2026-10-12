@@ -21,8 +21,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [email, setEmail] = useState('admin@school.com');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const fillDemoAccount = (demoEmail: string) => {
     setEmail(demoEmail);
@@ -70,7 +70,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      {/* Quick Demo Switcher */}
+      {false && (
       <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
         <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
           <ShieldAlert className="w-3.5 h-3.5 text-indigo-400" />
@@ -89,6 +89,8 @@ export default function LoginPage() {
           ))}
         </div>
       </div>
+
+      )}
 
       {/* Login Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
