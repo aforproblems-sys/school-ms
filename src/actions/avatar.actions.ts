@@ -15,21 +15,33 @@ function avatarPublicId(userId: string) {
   return `school-ms/avatars/user_${userId}`;
 }
 
+function shortMsg(err: unknown) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.length > 180 ? msg.slice(0, 180) + "..." : msg;
+}
+
 export async function updateMyAvatar(formData: FormData) {
   try {
+    // env sanity check
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return { ok: false as const, error: "CLOUDINARY_ENV_MISSING" as const, detail: "Cloudinary env missing in production" };
+    }
+
     const token = (await cookies()).get("sms_session_token")?.value;
     const session = token ? await verifySessionToken(token) : null;
     const userId = getUserIdFromSession(session);
-    if (!userId) return { ok: false as const, error: "UNAUTHORIZED" as const };
+    if (!userId) return { ok: false as const, error: "UNAUTHORIZED" as const, detail: "No session" };
 
     const file = formData.get("avatar") as File | null;
-    if (!file) return { ok: false as const, error: "NO_FILE" as const };
+    if (!file) return { ok: false as const, error: "NO_FILE" as const, detail: "No file in formData" };
 
     const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
-    if (!allowed.has(file.type)) return { ok: false as const, error: "INVALID_TYPE" as const };
+    if (!allowed.has(file.type)) return { ok: false as const, error: "INVALID_TYPE" as const, detail: file.type };
 
-    // NOTE: Next server-actions default limit sometimes ~1MB
-    // If big image fails, upload a smaller image or we will increase limit in next.config.ts
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64 = buffer.toString("base64");
     const dataUri = `data:${file.type};base64,${base64}`;
@@ -57,7 +69,7 @@ export async function updateMyAvatar(formData: FormData) {
     return { ok: true as const, url: uploaded.secure_url };
   } catch (err) {
     console.error("[AvatarUpload] failed:", err);
-    return { ok: false as const, error: "UPLOAD_FAILED" as const };
+    return { ok: false as const, error: "UPLOAD_FAILED" as const, detail: shortMsg(err) };
   }
 }
 
@@ -66,10 +78,9 @@ export async function removeMyAvatar() {
     const token = (await cookies()).get("sms_session_token")?.value;
     const session = token ? await verifySessionToken(token) : null;
     const userId = getUserIdFromSession(session);
-    if (!userId) return { ok: false as const, error: "UNAUTHORIZED" as const };
+    if (!userId) return { ok: false as const, error: "UNAUTHORIZED" as const, detail: "No session" };
 
     const publicId = avatarPublicId(userId);
-
     try {
       await cloudinary.uploader.destroy(publicId, { invalidate: true });
     } catch {}
@@ -84,19 +95,18 @@ export async function removeMyAvatar() {
     return { ok: true as const };
   } catch (err) {
     console.error("[AvatarRemove] failed:", err);
-    return { ok: false as const, error: "REMOVE_FAILED" as const };
+    return { ok: false as const, error: "REMOVE_FAILED" as const, detail: shortMsg(err) };
   }
 }
 
-/** wrappers for client <form action={...}> */
 export async function updateMyAvatarForm(formData: FormData): Promise<void> {
   const res = await updateMyAvatar(formData);
-  if (!res.ok) redirect(`/dashboard/settings/profile?error=${res.error}`);
+  if (!res.ok) redirect(`/dashboard/settings/profile?error=${res.error}&detail=${encodeURIComponent(res.detail || "")}`);
   redirect(`/dashboard/settings/profile?updated=1`);
 }
 
 export async function removeMyAvatarForm(_: FormData): Promise<void> {
   const res = await removeMyAvatar();
-  if (!res.ok) redirect(`/dashboard/settings/profile?error=${res.error}`);
+  if (!res.ok) redirect(`/dashboard/settings/profile?error=${res.error}&detail=${encodeURIComponent(res.detail || "")}`);
   redirect(`/dashboard/settings/profile?removed=1`);
 }

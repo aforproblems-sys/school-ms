@@ -9,6 +9,7 @@ export default async function ProfilePage({ searchParams }: { searchParams?: any
   const updated = sp.updated === "1";
   const removed = sp.removed === "1";
   const error = typeof sp.error === "string" ? sp.error : "";
+  const detail = typeof sp.detail === "string" ? sp.detail : "";
 
   const token = (await cookies()).get("sms_session_token")?.value;
   const session = token ? await verifySessionToken(token) : null;
@@ -40,7 +41,7 @@ export default async function ProfilePage({ searchParams }: { searchParams?: any
 
       {error ? (
         <div className="mt-3 rounded border border-rose-300 px-3 py-2 text-sm text-rose-700">
-          DP Error: {error}
+          DP Error: {error}\n{detail ? `\nDetail: ` : ""}
         </div>
       ) : null}
 
