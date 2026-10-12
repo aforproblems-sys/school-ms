@@ -23,6 +23,18 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // TEACHER RESTRICTIONS (block students + exams screens)
+  if (session?.role === "TEACHER") {
+    const blockedPrefixes = [
+      "/dashboard/users/students",
+      "/dashboard/examinations/exams",
+    ];
+    if (blockedPrefixes.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL("/forbidden", request.url));
+    }
+  }
+
+
   // 2. Unauthenticated user accessing protected dashboard route -> redirect to /login
   if (!session && !isPublicRoute && pathname.startsWith('/dashboard')) {
     const loginUrl = new URL('/login', request.url);
