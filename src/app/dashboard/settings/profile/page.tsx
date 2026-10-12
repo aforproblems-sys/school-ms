@@ -1,17 +1,16 @@
-import { updateMyAvatar } from "@/actions/avatar.actions";
+import { removeMyAvatar, updateMyAvatar } from "@/actions/avatar.actions";
+import { prisma } from "@/lib/prisma";
+import { verifySessionToken } from "@/lib/middleware-auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifySessionToken } from "@/lib/middleware-auth";
-import { prisma } from "@/lib/prisma";
 
 export default async function ProfilePage({ searchParams }: { searchParams?: any }) {
   const sp = (await searchParams) || {};
   const updated = sp.updated === "1";
+  const removed = sp.removed === "1";
 
   const token = (await cookies()).get("sms_session_token")?.value;
   const session = token ? await verifySessionToken(token) : null;
-
-  // your UserSession type doesn't have session.user, so use userId directly
   const userId = (session as any)?.userId || (session as any)?.id;
   if (!userId) redirect("/login");
 
@@ -20,39 +19,71 @@ export default async function ProfilePage({ searchParams }: { searchParams?: any
     select: { fullName: true, email: true, avatarUrl: true },
   });
 
-  async function action(formData: FormData) {
+  async function uploadAction(formData: FormData) {
     "use server";
     const res = await updateMyAvatar(formData);
     if (res.ok) redirect("/dashboard/settings/profile?updated=1");
     redirect("/dashboard/settings/profile?updated=0");
   }
 
-  return (
-    <div className="p-6 max-w-xl">
-      <h1 className="text-xl font-semibold">Profile</h1>
+  async function removeAction() {
+    "use server";
+    const res = await removeMyAvatar();
+    if (res.ok) redirect("/dashboard/settings/profile?removed=1");
+    redirect("/dashboard/settings/profile?removed=0");
+  }
 
-      <div className="mt-4 flex items-center gap-4">
+  return (
+    <div className="p-6 max-w-2xl">
+      <h1 className="text-2xl font-semibold">Profile Settings</h1>
+
+      {(updated || removed) ? (
+        <div className="mt-3 rounded border px-3 py-2 text-sm">
+          {updated ? "DP updated successfully." : null}
+          {removed ? "DP removed successfully." : null}
+        </div>
+      ) : null}
+
+      <div className="mt-6 flex items-center gap-4">
         <img
           src={user?.avatarUrl || "/favicon.ico"}
           alt="Avatar"
-          className="h-16 w-16 rounded-full object-cover border"
+          className="h-20 w-20 rounded-full object-cover border"
         />
+
         <div>
-          <div className="font-medium">{user?.fullName}</div>
+          <div className="text-lg font-medium">{user?.fullName}</div>
           <div className="text-sm text-muted-foreground">{user?.email}</div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            DP auto square + face-center (Cloudinary)
+          </div>
         </div>
       </div>
 
-      {updated ? <p className="mt-3 text-sm text-green-600">DP updated successfully.</p> : null}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <form action={uploadAction} encType="multipart/form-data" className="flex items-center gap-3">
+          <label className="inline-flex cursor-pointer items-center rounded bg-black px-3 py-2 text-white">
+            Change DP
+            <input name="avatar" type="file" accept="image/*" className="hidden" required />
+          </label>
 
-      <form action={action} className="mt-4 space-y-3">
-        <div className="space-y-1">
-          <label className="text-sm">Upload DP (jpg/png/webp, max 2MB)</label>
-          <input name="avatar" type="file" accept="image/*" required />
-        </div>
+          <button className="rounded border px-3 py-2">
+            Upload
+          </button>
+        </form>
 
-        <button className="rounded bg-black px-3 py-2 text-white">Save DP</button>
-      </form>
+        {user?.avatarUrl ? (
+          <form action={removeAction}>
+            <button className="rounded border border-red-500 px-3 py-2 text-red-600">
+              Remove DP
+            </button>
+          </form>
+        ) : null}
+      </div>
+
+      <p className="mt-3 text-xs text-muted-foreground">
+        Allowed: jpg/png/webp, max 2MB
+      </p>
     </div>
   );
 }
