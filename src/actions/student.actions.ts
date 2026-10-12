@@ -442,10 +442,15 @@ export async function deleteStudentAction(studentId: string) {
         data: { deletedAt: now },
       });
 
-      // Deactivate User Account
+            // Deactivate User Account + free unique email (so same email can be reused)
       await tx.user.update({
         where: { id: student.userId },
-        data: { isActive: false, deletedAt: now },
+        data: {
+          isActive: false,
+          deletedAt: now,
+          // Freed email on delete:
+          email: `deleted.${now.getTime()}.${student.userId}@example.invalid`,
+        },
       });
 
       await tx.auditLog.create({
