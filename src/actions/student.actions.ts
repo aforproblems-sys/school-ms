@@ -207,9 +207,20 @@ export async function createStudentAction(values: StudentFormValues) {
     return { success: false, error: 'Student password is required (min 6 chars)' };
   }
 
-  const studentPasswordHash = await hashPassword(data.studentPassword);
-  const guardianPasswordHash = data.guardianPassword && data.guardianPassword.trim().length >= 6
-    ? await hashPassword(data.guardianPassword)
+    const studentPlainPassword = (data.studentPassword || '').trim();
+  if (studentPlainPassword.length < 6) {
+    return { success: false, error: 'Student password is required (min 6 chars)' };
+  }
+  const studentPasswordHash = await hashPassword(studentPlainPassword);
+
+  const guardianEmailNormalized = (data.guardianEmail || '').trim().toLowerCase();
+  const guardianPlainPassword =
+    (data.guardianPassword || '').trim().length >= 6
+      ? (data.guardianPassword || '').trim()
+      : (guardianEmailNormalized ? (Math.random().toString(36).slice(2) + 'A1!') : '');
+
+  const guardianPasswordHash = guardianPlainPassword
+    ? await hashPassword(guardianPlainPassword)
     : await hashPassword(Math.random().toString(36).slice(2) + 'A1!');
 
   try {
@@ -340,24 +351,24 @@ export async function createStudentAction(values: StudentFormValues) {
       return student;
     });
 
-    // Send credentials emails (best-effort)
+        // Send credentials emails (best-effort)
     await sendCredentialsEmail({
       to: data.email.toLowerCase(),
       name: data.fullName,
       roleLabel: 'Student',
       username: data.email.toLowerCase(),
-      password: data.studentPassword!,
-    }).catch((e) => { console.error('EMAIL_SEND_FAILED:', e?.message || e); });
+      password: studentPlainPassword,
+    }).catch((e) => console.error('EMAIL_SEND_FAILED_STUDENT:', e?.message || e));
 
     const guardianEmail = (data.guardianEmail || '').trim().toLowerCase();
-    if (guardianEmail && data.guardianPassword && data.guardianPassword.trim().length >= 6) {
+    if (guardianEmail) {
       await sendCredentialsEmail({
         to: guardianEmail,
         name: data.guardianName,
         roleLabel: 'Parent/Guardian',
         username: guardianEmail,
-        password: data.guardianPassword,
-      }).catch((e) => { console.error('EMAIL_SEND_FAILED:', e?.message || e); });
+        password: guardianPlainPassword || '(password not set)',
+      }).catch((e) => console.error('EMAIL_SEND_FAILED_GUARDIAN:', e?.message || e));
     }
 
     broadcastStudentChange('create', result.id, { fullName: data.fullName });

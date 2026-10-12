@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getSession, hashPassword } from '@/lib/auth';
 import { SystemRole } from '@prisma/client';
+import { sendCredentialsEmail } from '@/lib/mailer';
 
 const ADMIN_ROLES: SystemRole[] = [SystemRole.SUPER_ADMIN, SystemRole.SCHOOL_ADMIN];
 
@@ -110,6 +111,15 @@ export async function createStaffAction(input: unknown) {
     },
     select: { id: true, email: true, fullName: true, systemRole: true },
   });
+
+  // Send credentials email (best-effort)
+  await sendCredentialsEmail({
+    to: data.email.toLowerCase(),
+    name: data.fullName,
+    roleLabel: String(data.systemRole),
+    username: data.email.toLowerCase(),
+    password: data.password,
+  }).catch((e) => console.error('EMAIL_SEND_FAILED_STAFF:', e?.message || e));
 
   return { success: true as const, user };
 }
