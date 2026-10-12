@@ -62,6 +62,35 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // 5a. Permission Route Denies (from Access Control via session.permissions: "!attendance.read" etc.)
+  if (session && pathname.startsWith('/dashboard')) {
+    const denied = new Set(
+      (session.permissions || [])
+        .filter((p) => typeof p === 'string' && p.startsWith('!'))
+        .map((p) => p.slice(1))
+    );
+
+    const PERMISSION_DENY_ROUTE_RULES: Array<[string, string]> = [
+      ['attendance.read', '/dashboard/attendance'],
+      ['timetable.read', '/dashboard/timetable'],
+      ['exams.read', '/dashboard/examinations'],
+      ['marks.read', '/dashboard/examinations'],
+      ['homework.read', '/dashboard/academic-work/homework'],
+      ['fees.read', '/dashboard/finance/fees'],
+      ['expenses.read', '/dashboard/finance/expenses'],
+      ['payroll.read', '/dashboard/finance/payroll'],
+      ['reports.read', '/dashboard/reports'],
+      ['notices.read', '/dashboard/announcements'],
+      ['messages.create', '/dashboard/messages'],
+    ];
+
+    for (const [perm, prefix] of PERMISSION_DENY_ROUTE_RULES) {
+      if (denied.has(perm) && pathname.startsWith(prefix)) {
+        return NextResponse.redirect(new URL('/forbidden', request.url));
+      }
+    }
+  }
+
   // 5. Role Authorization Guard -> redirect to /forbidden if role is unauthorized
   if (session && pathname.startsWith('/dashboard')) {
     const isAllowed = isAuthorizedRoute(pathname, session.role);
